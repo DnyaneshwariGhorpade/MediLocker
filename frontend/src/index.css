@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-medi-green: #4f6853;
+  --color-medi-light: #f5f4ef;
+  --color-medi-dark: #2a312a;
+  --color-medi-beige: #e8e6df;
+  --color-medi-accent: #6f8a73;
+}
+
+@layer base {
+  body {
+    @apply bg-medi-light text-medi-dark antialiased;
+  }
+}

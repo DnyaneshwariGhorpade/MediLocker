@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: medilocker
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: medilocker_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U medilocker -d medilocker_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+      redis:
+        image: redis:7.2-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://medilocker:ci@localhost:5432/medilocker_test
+      DIRECT_URL: postgresql://medilocker:ci@localhost:5432/medilocker_test
+      REDIS_URL: redis://localhost:6379
+      # CI-only values. Production secrets come from the deployment environment.
+      JWT_SECRET: ci-only-secret-value-that-is-long-enough-to-pass-validation
+      KMS_MASTER_KEY: Y2ktb25seS0zMi1ieXRlLW1hc3Rlci1rZXktdmFsdWUhIQ==
+      STORAGE_DRIVER: LOCAL
+      STORAGE_PATH: ./storage
+      SCHEDULER_ENABLED: 'false'
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      - name: Apply migrations
+        run: |
+          for file in ../database/migrations/*.sql; do
+            echo "Applying $file"
+            PGPASSWORD=ci psql -h localhost -U medilocker -d medilocker_test -v ON_ERROR_STOP=1 -f "$file"
+          done
+
+      - run: npx prisma generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Seed
+        run: npm run seed
+
+      - name: Test
+        run: npm test
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Container images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      # Build only: publishing is a deployment concern, not a CI one.
+      - name: Build backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

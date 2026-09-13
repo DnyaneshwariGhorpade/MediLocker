@@ -1,0 +1,495 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model users {
+  user_id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                 String              @unique @db.VarChar(255)
+  phone_number          String              @unique @db.VarChar(20)
+  password_hash         String              @db.VarChar(255)
+  user_role             user_role_enum      @default(PATIENT)
+  is_mfa_enabled        Boolean             @default(true)
+  mfa_secret            String?             @db.VarChar(128)
+  account_status        account_status_enum @default(PENDING_VERIFICATION)
+  failed_login_attempts Int                 @default(0)
+  lockout_until         DateTime?           @db.Timestamptz(6)
+  last_login_at         DateTime?           @db.Timestamptz(6)
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime            @default(now()) @db.Timestamptz(6)
+  password_changed_at   DateTime?           @db.Timestamptz(6)
+  mfa_enrolled_at       DateTime?           @db.Timestamptz(6)
+  audit_logs            audit_logs[]
+  doctors               doctors?
+  hospitals             hospitals?
+  hospitals_verified    hospitals[]         @relation("admin_verified_hospitals")
+  mfa_backup_codes      mfa_backup_codes[]
+  notifications         notifications[]
+  patients              patients?
+  record_flags_flagged  record_flags[]      @relation("user_flags")
+  record_flags_reviewed record_flags[]      @relation("admin_reviews")
+  user_sessions         user_sessions[]
+}
+
+model patients {
+  patient_id                   String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                      String                        @unique @db.Uuid
+  aadhaar_hash                 String                        @unique @db.VarChar(64)
+  aadhaar_vault_token          String?                       @db.VarChar(128)
+  first_name                   String                        @db.VarChar(100)
+  last_name                    String                        @db.VarChar(100)
+  date_of_birth                DateTime                      @db.Date
+  gender                       String                        @db.VarChar(20)
+  blood_group                  String?                       @db.VarChar(10)
+  address_line                 String?
+  city                         String?                       @db.VarChar(100)
+  state                        String?                       @db.VarChar(100)
+  pincode                      String?                       @db.VarChar(10)
+  emergency_contact_name       String?                       @db.VarChar(100)
+  emergency_contact_phone      String?                       @db.VarChar(20)
+  emergency_contact_relation   String?                       @db.VarChar(50)
+  is_emergency_sharing_allowed Boolean                       @default(true)
+  created_at                   DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at                   DateTime                      @default(now()) @db.Timestamptz(6)
+  break_glass_sessions         break_glass_access_sessions[]
+  consents                     consents[]
+  consultations                consultations[]
+  medical_records              medical_records[]
+  patient_vaults               patient_vaults?
+  patient_vitals               patient_vitals[]
+  users                        users                         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  prescriptions                prescriptions[]
+}
+
+model hospitals {
+  hospital_id          String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id              String                        @unique @db.Uuid
+  hospital_name        String                        @db.VarChar(255)
+  registration_number  String                        @unique @db.VarChar(100)
+  hospital_type        hospital_type_enum            @default(MULTI_SPECIALTY)
+  contact_email        String                        @db.VarChar(255)
+  contact_phone        String                        @db.VarChar(20)
+  address              String?
+  city                 String                        @db.VarChar(100)
+  state                String                        @db.VarChar(100)
+  pincode              String                        @db.VarChar(10)
+  verification_status  verification_status_enum      @default(PENDING)
+  verified_by_admin_id String?                       @db.Uuid
+  verified_at          DateTime?                     @db.Timestamptz(6)
+  created_at           DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime                      @default(now()) @db.Timestamptz(6)
+  break_glass_sessions break_glass_access_sessions[]
+  consents             consents[]
+  consultations        consultations[]
+  doctors              doctors[]
+  hms_api_clients      hms_api_clients[]
+  users                users                         @relation(fields: [user_id], references: [user_id])
+  admin_verifier       users?                        @relation("admin_verified_hospitals", fields: [verified_by_admin_id], references: [user_id])
+  medical_records      medical_records[]
+}
+
+model doctors {
+  doctor_id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id               String                        @unique @db.Uuid
+  primary_hospital_id   String?                       @db.Uuid
+  mrn                   String                        @unique @db.VarChar(100)
+  state_medical_council String                        @db.VarChar(150)
+  first_name            String                        @db.VarChar(100)
+  last_name             String                        @db.VarChar(100)
+  specialization        String                        @db.VarChar(100)
+  qualification         String                        @db.VarChar(150)
+  experience_years      Int?                          @default(0)
+  public_key_pem        String
+  key_fingerprint       String                        @db.VarChar(64)
+  verification_status   verification_status_enum      @default(PENDING)
+  govt_id_document_url  String?                       @db.VarChar(500)
+  created_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  break_glass_sessions  break_glass_access_sessions[]
+  consents              consents[]
+  consultations         consultations[]
+  hospitals             hospitals?                    @relation(fields: [primary_hospital_id], references: [hospital_id])
+  users                 users                         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  medical_records       medical_records[]
+  prescriptions         prescriptions[]
+}
+
+model patient_vaults {
+  vault_id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patient_id          String            @unique @db.Uuid
+  vault_number        String            @unique @db.VarChar(32)
+  encryption_salt     String            @db.VarChar(64)
+  total_records_count Int               @default(0)
+  total_storage_bytes BigInt            @default(0)
+  vault_status        String            @default("ACTIVE") @db.VarChar(30)
+  created_at          DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime          @default(now()) @db.Timestamptz(6)
+  medical_records     medical_records[]
+  patients            patients          @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+}
+
+model medical_records {
+  record_id             String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  vault_id              String                        @db.Uuid
+  patient_id            String                        @db.Uuid
+  uploaded_by_doctor_id String?                       @db.Uuid
+  hospital_id           String?                       @db.Uuid
+  record_title          String                        @db.VarChar(255)
+  category              record_category_enum
+  is_sensitive          Boolean                       @default(false)
+  diagnosis             String?                       @db.VarChar(255)
+  file_s3_key           String                        @db.VarChar(500)
+  file_mime_type        String                        @db.VarChar(100)
+  file_size_bytes       BigInt
+  file_sha256_hash      String                        @db.VarChar(64)
+  kms_key_id            String                        @db.VarChar(255)
+  encrypted_dek         String
+  iv_bytes              String                        @db.VarChar(64)
+  version               Int                           @default(1)
+  parent_record_id      String?                       @db.Uuid
+  record_date           DateTime                      @default(now()) @db.Date
+  tags                  String[]
+  flag_status           flag_lifecycle_enum           @default(NORMAL)
+  is_deleted            Boolean                       @default(false)
+  created_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  storage_driver        String                        @default("MOCK") @db.VarChar(20)
+  encryption_algorithm  String                        @default("NONE") @db.VarChar(50)
+  dek_auth_tag          String?                       @db.VarChar(64)
+  original_filename     String?                       @db.VarChar(255)
+  integrity_checked_at  DateTime?                     @db.Timestamptz(6)
+  integrity_status      String                        @default("UNVERIFIED") @db.VarChar(20)
+  blockchain_anchor     blockchain_anchors?
+  break_glass_accesses  break_glass_record_accesses[]
+  hospitals             hospitals?                    @relation(fields: [hospital_id], references: [hospital_id])
+  parent_record         medical_records?              @relation("RecordVersions", fields: [parent_record_id], references: [record_id])
+  child_records         medical_records[]             @relation("RecordVersions")
+  patients              patients                      @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+  doctors               doctors?                      @relation(fields: [uploaded_by_doctor_id], references: [doctor_id])
+  patient_vaults        patient_vaults                @relation(fields: [vault_id], references: [vault_id], onDelete: Cascade)
+  prescription          prescriptions?
+  record_flags          record_flags[]
+
+  @@index([storage_driver], map: "idx_records_storage_driver")
+  @@index([integrity_status, integrity_checked_at], map: "idx_records_integrity")
+}
+
+model prescriptions {
+  prescription_id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  record_id              String          @unique @db.Uuid
+  doctor_id              String          @db.Uuid
+  patient_id             String          @db.Uuid
+  clinical_notes         String?
+  medications            Json            @default("[]")
+  digital_signature      String
+  signature_algorithm    String?         @default("SHA256withRSA") @db.VarChar(50)
+  doctor_public_key_hash String          @db.VarChar(64)
+  is_signature_valid     Boolean?        @default(true)
+  issued_at              DateTime        @default(now()) @db.Timestamptz(6)
+  valid_until            DateTime?       @db.Date
+  doctors                doctors         @relation(fields: [doctor_id], references: [doctor_id])
+  patients               patients        @relation(fields: [patient_id], references: [patient_id])
+  medical_records        medical_records @relation(fields: [record_id], references: [record_id], onDelete: Cascade)
+}
+
+model consents {
+  consent_id              String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patient_id              String              @db.Uuid
+  doctor_id               String              @db.Uuid
+  hospital_id             String?             @db.Uuid
+  allowed_categories      String[]            @db.VarChar(50)
+  blocked_categories      String[]            @db.VarChar(50)
+  access_level            String              @default("READ_ONLY") @db.VarChar(30)
+  consent_status          consent_status_enum @default(ACTIVE)
+  valid_from              DateTime            @default(now()) @db.Timestamptz(6)
+  valid_until             DateTime            @db.Timestamptz(6)
+  revoked_at              DateTime?           @db.Timestamptz(6)
+  revocation_reason       String?
+  consent_token_hash      String              @unique @db.VarChar(64)
+  created_at              DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime            @default(now()) @db.Timestamptz(6)
+  expiry_reminder_sent_at DateTime?           @db.Timestamptz(6)
+  doctors                 doctors             @relation(fields: [doctor_id], references: [doctor_id], onDelete: Cascade)
+  hospitals               hospitals?          @relation(fields: [hospital_id], references: [hospital_id])
+  patients                patients            @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+}
+
+model break_glass_access_sessions {
+  session_id                  String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patient_id                  String                        @db.Uuid
+  doctor_id                   String                        @db.Uuid
+  hospital_id                 String                        @db.Uuid
+  emergency_reason            String
+  hospital_admin_verifier_id  String?                       @db.Uuid
+  verification_otp_hash       String?                       @db.VarChar(64)
+  session_start_at            DateTime                      @default(now()) @db.Timestamptz(6)
+  session_expires_at          DateTime                      @db.Timestamptz(6)
+  session_status              String                        @default("ACTIVE") @db.VarChar(30)
+  patient_notified            Boolean                       @default(false)
+  patient_notified_at         DateTime?                     @db.Timestamptz(6)
+  ip_address                  String?                       @db.VarChar(45)
+  user_agent                  String?
+  verification_otp_expires_at DateTime?                     @db.Timestamptz(6)
+  doctors                     doctors                       @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals                   hospitals                     @relation(fields: [hospital_id], references: [hospital_id])
+  patients                    patients                      @relation(fields: [patient_id], references: [patient_id])
+  record_accesses             break_glass_record_accesses[]
+}
+
+model break_glass_record_accesses {
+  access_id         String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id        String                      @db.Uuid
+  record_id         String                      @db.Uuid
+  accessed_at       DateTime                    @default(now()) @db.Timestamptz(6)
+  decryption_status String                      @default("SUCCESS") @db.VarChar(30)
+  medical_records   medical_records             @relation(fields: [record_id], references: [record_id])
+  session           break_glass_access_sessions @relation(fields: [session_id], references: [session_id], onDelete: Cascade)
+}
+
+model blockchain_anchors {
+  anchor_id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  record_id          String          @unique @db.Uuid
+  document_sha256    String          @db.VarChar(64)
+  blockchain_network String?         @default("HYPERLEDGER_FABRIC") @db.VarChar(50)
+  channel_name       String?         @default("medilocker-vault") @db.VarChar(100)
+  chaincode_name     String?         @default("RecordIntegrityCC") @db.VarChar(100)
+  transaction_tx_id  String?         @unique @db.VarChar(128)
+  block_number       BigInt?
+  anchor_status      String          @default("PENDING") @db.VarChar(30)
+  last_verified_at   DateTime?       @db.Timestamptz(6)
+  created_at         DateTime        @default(now()) @db.Timestamptz(6)
+  ledger_entry_id    BigInt?
+  ledger_entries     ledger_entries? @relation(fields: [ledger_entry_id], references: [entry_id], onDelete: NoAction, onUpdate: NoAction)
+  medical_records    medical_records @relation(fields: [record_id], references: [record_id])
+}
+
+model record_flags {
+  flag_id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  record_id             String              @db.Uuid
+  flagged_by_user_id    String?             @db.Uuid
+  user_role             user_role_enum
+  flag_reason           flag_reason_enum
+  reason_details        String?
+  flag_lifecycle_status flag_lifecycle_enum @default(FLAGGED)
+  reviewed_by_admin_id  String?             @db.Uuid
+  admin_notes           String?
+  resolution_action     String?             @db.VarChar(50)
+  created_at            DateTime            @default(now()) @db.Timestamptz(6)
+  resolved_at           DateTime?           @db.Timestamptz(6)
+  flagged_by            users?              @relation("user_flags", fields: [flagged_by_user_id], references: [user_id])
+  medical_records       medical_records     @relation(fields: [record_id], references: [record_id])
+  reviewed_by           users?              @relation("admin_reviews", fields: [reviewed_by_admin_id], references: [user_id])
+}
+
+model patient_vitals {
+  vital_id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patient_id          String   @db.Uuid
+  recorded_by_user_id String?  @db.Uuid
+  metric_type         String   @db.VarChar(50)
+  metric_value        Decimal  @db.Decimal(8, 2)
+  metric_unit         String   @db.VarChar(20)
+  reading_context     String?  @db.VarChar(100)
+  recorded_at         DateTime @default(now()) @db.Timestamptz(6)
+  patients            patients @relation(fields: [patient_id], references: [patient_id], onDelete: Cascade)
+}
+
+model consultations {
+  consultation_id     String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patient_id          String     @db.Uuid
+  doctor_id           String     @db.Uuid
+  hospital_id         String?    @db.Uuid
+  consultation_date   DateTime   @default(now()) @db.Timestamptz(6)
+  chief_complaint     String
+  diagnosis_summary   String?
+  follow_up_date      DateTime?  @db.Date
+  consultation_status String     @default("COMPLETED") @db.VarChar(30)
+  created_at          DateTime   @default(now()) @db.Timestamptz(6)
+  doctors             doctors    @relation(fields: [doctor_id], references: [doctor_id])
+  hospitals           hospitals? @relation(fields: [hospital_id], references: [hospital_id])
+  patients            patients   @relation(fields: [patient_id], references: [patient_id])
+}
+
+model hms_api_clients {
+  client_id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hospital_id           String    @db.Uuid
+  client_name           String    @db.VarChar(150)
+  api_key_hash          String    @unique @db.VarChar(64)
+  api_secret_hash       String    @db.VarChar(255)
+  allowed_ip_cidrs      String[]
+  rate_limit_per_minute Int       @default(1000)
+  client_status         String    @default("ACTIVE") @db.VarChar(30)
+  last_used_at          DateTime? @db.Timestamptz(6)
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  hospitals             hospitals @relation(fields: [hospital_id], references: [hospital_id], onDelete: Cascade)
+}
+
+model notifications {
+  notification_id   String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String                    @db.Uuid
+  event_type        notification_event_enum
+  channel           notification_channel_enum @default(PUSH)
+  title             String                    @db.VarChar(255)
+  message           String
+  payload_json      Json                      @default("{}")
+  delivery_status   String                    @default("PENDING") @db.VarChar(30)
+  delivered_at      DateTime?                 @db.Timestamptz(6)
+  read_at           DateTime?                 @db.Timestamptz(6)
+  created_at        DateTime                  @default(now()) @db.Timestamptz(6)
+  delivery_attempts Int                       @default(0)
+  last_attempt_at   DateTime?                 @db.Timestamptz(6)
+  delivery_error    String?
+  provider_receipt  String?                   @db.VarChar(255)
+  users             users                     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([delivery_status, delivery_attempts, created_at], map: "idx_notifications_pending")
+}
+
+model audit_logs {
+  log_id            BigInt   @id @default(autoincrement())
+  event_id          String   @unique @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String?  @db.Uuid
+  user_role         String?  @db.VarChar(30)
+  action            String   @db.VarChar(60)
+  resource_type     String   @db.VarChar(50)
+  resource_id       String?  @db.VarChar(100)
+  ip_address        String?  @db.VarChar(45)
+  user_agent        String?
+  status_code       Int      @default(200)
+  details           Json     @default("{}")
+  event_sha256_hash String   @db.VarChar(64)
+  previous_log_hash String?  @db.VarChar(64)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+  users             users?   @relation(fields: [user_id], references: [user_id])
+}
+
+model mfa_backup_codes {
+  code_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  code_hash  String    @db.VarChar(64)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, code_hash], map: "idx_mfa_backup_code_hash")
+}
+
+model user_sessions {
+  session_id     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String    @db.Uuid
+  jti            String    @unique @db.Uuid
+  ip_address     String?   @db.VarChar(45)
+  user_agent     String?
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  last_seen_at   DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at     DateTime  @db.Timestamptz(6)
+  revoked_at     DateTime? @db.Timestamptz(6)
+  revoked_reason String?   @db.VarChar(100)
+  users          users     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, revoked_at, expires_at], map: "idx_user_sessions_active")
+}
+
+model ledger_entries {
+  entry_id           BigInt               @id @default(autoincrement())
+  subject_type       String               @db.VarChar(50)
+  subject_id         String               @db.VarChar(100)
+  payload_sha256     String               @db.VarChar(64)
+  previous_hash      String?              @db.VarChar(64)
+  entry_hash         String               @db.VarChar(64)
+  metadata           Json                 @default("{}")
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  blockchain_anchors blockchain_anchors[]
+
+  @@index([payload_sha256], map: "idx_ledger_payload")
+  @@index([subject_type, subject_id], map: "idx_ledger_subject")
+}
+
+enum user_role_enum {
+  PATIENT
+  DOCTOR
+  HOSPITAL_ADMIN
+  PLATFORM_ADMIN
+  EMERGENCY_PHYSICIAN
+}
+
+enum account_status_enum {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  DEACTIVATED
+}
+
+enum verification_status_enum {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  REVOKED
+}
+
+enum hospital_type_enum {
+  GOVERNMENT
+  PRIVATE_HOSPITAL
+  CLINIC
+  DIAGNOSTIC_LAB
+  MULTI_SPECIALTY
+}
+
+enum record_category_enum {
+  PRESCRIPTION
+  BLOOD_REPORT
+  X_RAY
+  MRI
+  CT_SCAN
+  VACCINATION_RECORD
+  ALLERGY_RECORD
+  SURGERY_HISTORY
+  DISCHARGE_SUMMARY
+  CHRONIC_DISEASE_HISTORY
+  PSYCHIATRIC_REPORT
+  HIV_REPORT
+}
+
+enum flag_lifecycle_enum {
+  NORMAL
+  FLAGGED
+  UNDER_REVIEW
+  RESOLVED
+}
+
+enum flag_reason_enum {
+  INCORRECT_INFO
+  DUPLICATE
+  WRONG_PRESCRIPTION
+  ILLEGIBLE
+  EXPIRED
+  MISSING_PAGES
+  OTHER
+}
+
+enum consent_status_enum {
+  ACTIVE
+  EXPIRED
+  REVOKED
+  REJECTED
+}
+
+enum notification_event_enum {
+  NEW_RECORD_UPLOAD
+  ACCESS_REQUEST
+  CONSENT_REQUIRED
+  EMERGENCY_ACCESS
+  FLAGGED_REPORT
+  FOLLOW_UP_REMINDER
+}
+
+enum notification_channel_enum {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}

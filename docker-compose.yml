@@ -1,0 +1,78 @@
+name: medilocker
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: medilocker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medilocker-dev}
+      POSTGRES_DB: medilocker
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Migrations run in order on first start of an empty volume.
+      - ./database/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U medilocker -d medilocker']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.2-alpine
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    volumes:
+      - redis-data:/data
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://medilocker:${POSTGRES_PASSWORD:-medilocker-dev}@postgres:5432/medilocker
+      DIRECT_URL: postgresql://medilocker:${POSTGRES_PASSWORD:-medilocker-dev}@postgres:5432/medilocker
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      # Both are required and have no default: the app refuses to start without
+      # them rather than falling back to a value that is public in the repo.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env before starting}
+      KMS_MASTER_KEY: ${KMS_MASTER_KEY:?set KMS_MASTER_KEY in .env before starting}
+      STORAGE_DRIVER: LOCAL
+      STORAGE_PATH: /app/storage
+      KEY_PROVIDER: LOCAL
+      SCHEDULER_ENABLED: 'true'
+      PUBLIC_VERIFY_URL: ${PUBLIC_VERIFY_URL:-http://localhost:8080/verify}
+    volumes:
+      - record-storage:/app/storage
+    ports:
+      - '3000:3000'
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Empty means same-origin; nginx proxies /api to the backend.
+        VITE_API_URL: ''
+    depends_on:
+      - backend
+    ports:
+      - '8080:80'
+
+volumes:
+  postgres-data:
+  redis-data:
+  record-storage:
