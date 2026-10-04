@@ -23,7 +23,6 @@
     "chart.js": "^4.5.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.43.0",
-    "medilocker-root": "file:..",
     "postcss": "^8.5.28",
     "react": "^19.3.0",
     "react-chartjs-2": "^5.3.1",
