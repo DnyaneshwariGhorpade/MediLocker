@@ -75,14 +75,25 @@ async function main() {
 
     const password_hash = await bcrypt.hash('password123', env.bcryptRounds);
 
+    // Canonical demo logins. These four accounts are the documented entry
+    // points for manual testing, so their credentials are fixed rather than
+    // generated from a loop index.
+    const CANONICAL = {
+        hospital: { email: 'hospital@medilocker.com', phone: '3333333333' },
+        doctor: { email: 'doctor@medilocker.com', phone: '2222222222' },
+        patient: { email: 'patient@medilocker.com', phone: '1111111111' },
+        admin: { email: 'admin@medilocker.com', phone: '4444444444' },
+    };
+
     // 1. Create 2 Hospitals
     console.log('Creating Hospitals...');
     const hospitals = [];
     for (let i = 1; i <= 2; i++) {
+        const canonical = i === 1;
         const user = await db.users.create({
             data: {
-                email: `hospital${i}@medilocker.com`,
-                phone_number: `900000000${i}`,
+                email: canonical ? CANONICAL.hospital.email : `hospital${i}@medilocker.com`,
+                phone_number: canonical ? CANONICAL.hospital.phone : `900000000${i}`,
                 password_hash,
                 user_role: 'HOSPITAL_ADMIN',
                 account_status: 'ACTIVE'
@@ -92,7 +103,7 @@ async function main() {
         const hospital = await db.hospitals.create({
             data: {
                 user_id: user.user_id,
-                hospital_name: `City General Hospital ${i}`,
+                hospital_name: canonical ? 'City General Hospital' : `City General Hospital ${i}`,
                 registration_number: `HOSP-REG-${1000 + i}`,
                 hospital_type: 'MULTI_SPECIALTY',
                 contact_email: `contact@hospital${i}.com`,
@@ -110,10 +121,11 @@ async function main() {
     console.log('Creating Doctors...');
     const doctors = [];
     for (let i = 1; i <= 4; i++) {
+        const canonical = i === 1;
         const user = await db.users.create({
             data: {
-                email: `doctor${i}@medilocker.com`,
-                phone_number: `800000000${i}`,
+                email: canonical ? CANONICAL.doctor.email : `doctor${i}@medilocker.com`,
+                phone_number: canonical ? CANONICAL.doctor.phone : `800000000${i}`,
                 password_hash,
                 user_role: 'DOCTOR',
                 account_status: 'ACTIVE'
@@ -124,7 +136,7 @@ async function main() {
         if (!hospital) throw new Error('Seed failed: no hospitals were created.');
 
         const keyPair = generateDoctorKeyPair();
-        devKeys[`doctor${i}@medilocker.com`] = keyPair;
+        devKeys[canonical ? CANONICAL.doctor.email : `doctor${i}@medilocker.com`] = keyPair;
 
         const doctor = await db.doctors.create({
             data: {
@@ -147,10 +159,11 @@ async function main() {
     // 3. Create 10 Patients
     console.log('Creating Patients...');
     for (let i = 1; i <= 10; i++) {
+        const canonical = i === 1;
         const user = await db.users.create({
             data: {
-                email: `patient${i}@medilocker.com`,
-                phone_number: `70000000${i.toString().padStart(2, '0')}`,
+                email: canonical ? CANONICAL.patient.email : `patient${i}@medilocker.com`,
+                phone_number: canonical ? CANONICAL.patient.phone : `70000000${i.toString().padStart(2, '0')}`,
                 password_hash,
                 user_role: 'PATIENT',
                 account_status: 'ACTIVE'
@@ -183,8 +196,8 @@ async function main() {
     console.log('Creating Platform Admin...');
     await db.users.create({
         data: {
-            email: 'admin@medilocker.com',
-            phone_number: '9999999999',
+            email: CANONICAL.admin.email,
+            phone_number: CANONICAL.admin.phone,
             password_hash,
             user_role: 'PLATFORM_ADMIN',
             account_status: 'ACTIVE'
