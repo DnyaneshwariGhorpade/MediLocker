@@ -54,6 +54,16 @@ export async function main() {
         throw new Error('Refusing to seed: NODE_ENV is production. This script deletes all data.');
     }
 
+    await seedDatabase();
+}
+
+/**
+ * Performs the destructive wipe and reseed without the NODE_ENV guard.
+ *
+ * Callers must supply their own authorisation: the CLI path goes through
+ * main(), and the temporary seeder route is guarded by SEED_TOKEN.
+ */
+export async function seedDatabase() {
     console.log('Seeding database...');
 
     // Clear existing data for a clean slate. Order matters: several relations
