@@ -49,7 +49,7 @@ async function clearAll() {
     await db.users.deleteMany();
 }
 
-async function main() {
+export async function main() {
     if (env.isProduction) {
         throw new Error('Refusing to seed: NODE_ENV is production. This script deletes all data.');
     }
@@ -210,11 +210,15 @@ async function main() {
     console.log('MFA: seeded accounts have no TOTP secret, so the development code 123456 applies until they enrol.');
 }
 
-main()
-    .catch((e) => {
-        console.error(e);
-        process.exit(1);
-    })
-    .finally(async () => {
-        await db.$disconnect();
-    });
+// Only wipe and reseed when this file is the process entry point. Importing it
+// (for example from the temporary seeder route) must not trigger a wipe.
+if (require.main === module) {
+    main()
+        .catch((e) => {
+            console.error(e);
+            process.exit(1);
+        })
+        .finally(async () => {
+            await db.$disconnect();
+        });
+}

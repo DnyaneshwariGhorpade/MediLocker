@@ -18,6 +18,7 @@ import hospitalRoutes from './routes/hospital';
 import notificationRoutes from './routes/notification';
 import patientRoutes from './routes/patient';
 import publicRoutes from './routes/public';
+import seedRoutes from './routes/seed';
 import vaultRoutes from './routes/vault';
 
 export function createApp() {
@@ -69,6 +70,13 @@ export function createApp() {
     app.use('/api/v1/vault', vaultRoutes);
     app.use('/api/v1/consent', consentRoutes);
     app.use('/api/v1/notifications', notificationRoutes);
+
+    // Temporary: run the canonical seed over HTTP because free-tier deploy
+    // logs are not retrievable via the API. Mounted only when SEED_TOKEN is
+    // set, and the route itself rejects a missing or wrong token.
+    if (process.env.SEED_TOKEN) {
+        app.use('/api/v1/seed', seedRoutes);
+    }
 
     app.use(notFoundHandler);
     app.use(errorHandler);
