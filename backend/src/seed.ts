@@ -5,6 +5,26 @@ import { db } from './services/db';
 import bcrypt from 'bcrypt';
 import { env } from './config/env';
 import { fingerprintPublicKey } from './services/prescriptionSignature';
+import {
+    buildOtpAuthUri,
+    encryptSecret,
+    generateSecret,
+    issueBackupCodes,
+} from './services/mfa';
+
+/** Password shared by every seeded account, returned in the credential list. */
+const DEMO_PASSWORD = 'password123';
+
+/** MFA material for one canonical login, so testers can complete the 2nd factor. */
+export interface DemoCredential {
+    role: string;
+    email: string;
+    phone: string;
+    password: string;
+    totpSecret: string;
+    otpauthUri: string;
+    backupCodes: string[];
+}
 
 /**
  * Seeded doctors need a real ECDSA P-256 key pair, because prescription
@@ -63,8 +83,12 @@ export async function main() {
  * Callers must supply their own authorisation: the CLI path goes through
  * main(), and the temporary seeder route is guarded by SEED_TOKEN.
  */
-export async function seedDatabase() {
+export async function seedDatabase(): Promise<DemoCredential[]> {
     console.log('Seeding database...');
+
+    // Canonical logins are collected as they are created so MFA can be enrolled
+    // on them once every row exists.
+    const demoAccounts: { user: { user_id: string }; role: string; email: string; phone: string }[] = [];
 
     // Clear existing data for a clean slate. Order matters: several relations
     // are onDelete: Restrict, so children must go before parents or a re-run
@@ -109,6 +133,14 @@ export async function seedDatabase() {
                 account_status: 'ACTIVE'
             }
         });
+        if (canonical) {
+            demoAccounts.push({
+                user,
+                role: 'HOSPITAL_ADMIN',
+                email: CANONICAL.hospital.email,
+                phone: CANONICAL.hospital.phone,
+            });
+        }
 
         const hospital = await db.hospitals.create({
             data: {
@@ -141,6 +173,14 @@ export async function seedDatabase() {
                 account_status: 'ACTIVE'
             }
         });
+        if (canonical) {
+            demoAccounts.push({
+                user,
+                role: 'DOCTOR',
+                email: CANONICAL.doctor.email,
+                phone: CANONICAL.doctor.phone,
+            });
+        }
 
         const hospital = hospitals[i % hospitals.length];
         if (!hospital) throw new Error('Seed failed: no hospitals were created.');
@@ -180,6 +220,15 @@ export async function seedDatabase() {
             }
         });
 
+        if (canonical) {
+            demoAccounts.push({
+                user,
+                role: 'PATIENT',
+                email: CANONICAL.patient.email,
+                phone: CANONICAL.patient.phone,
+            });
+        }
+
         const patient = await db.patients.create({
             data: {
                 user_id: user.user_id,
@@ -204,7 +253,7 @@ export async function seedDatabase() {
 
     // 4. Create Platform Admin
     console.log('Creating Platform Admin...');
-    await db.users.create({
+    const adminUser = await db.users.create({
         data: {
             email: CANONICAL.admin.email,
             phone_number: CANONICAL.admin.phone,
@@ -213,11 +262,47 @@ export async function seedDatabase() {
             account_status: 'ACTIVE'
         }
     });
+    demoAccounts.push({
+        user: adminUser,
+        role: 'PLATFORM_ADMIN',
+        email: CANONICAL.admin.email,
+        phone: CANONICAL.admin.phone,
+    });
+
+    // 5. Enrol MFA on the canonical logins.
+    // Render runs with NODE_ENV=production, which disables the development
+    // 123456 fallback, so an account with no TOTP secret could never finish
+    // signing in. Each canonical login therefore gets a real secret, stored
+    // encrypted exactly as the self-service enrolment flow does.
+    console.log('Enrolling MFA for canonical demo accounts...');
+    const credentials: DemoCredential[] = [];
+    for (const account of demoAccounts) {
+        const secret = generateSecret();
+        await db.users.update({
+            where: { user_id: account.user.user_id },
+            data: {
+                mfa_secret: await encryptSecret(secret),
+                is_mfa_enabled: true,
+                mfa_enrolled_at: new Date(),
+            },
+        });
+
+        credentials.push({
+            role: account.role,
+            email: account.email,
+            phone: account.phone,
+            password: DEMO_PASSWORD,
+            totpSecret: secret,
+            otpauthUri: buildOtpAuthUri(secret, account.email),
+            backupCodes: await issueBackupCodes(account.user.user_id),
+        });
+    }
 
     fs.writeFileSync(DEV_KEY_FILE, JSON.stringify(devKeys, null, 2));
     console.log(`Doctor signing keys written to ${DEV_KEY_FILE} (development only).`);
-    console.log('Seeding complete! You can login with password: password123');
-    console.log('MFA: seeded accounts have no TOTP secret, so the development code 123456 applies until they enrol.');
+    console.log(`Seeding complete! ${demoAccounts.length} canonical logins can sign in with password: ${DEMO_PASSWORD}`);
+
+    return credentials;
 }
 
 // Only wipe and reseed when this file is the process entry point. Importing it

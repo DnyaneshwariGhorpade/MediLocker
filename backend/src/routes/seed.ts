@@ -31,8 +31,12 @@ router.post('/', async (req: Request, res: Response) => {
 
     try {
         const seed = await import('../seed.js');
-        await seed.seedDatabase();
-        res.json({ ok: true, message: 'Seed complete. Logins use password123.' });
+        const credentials = await seed.seedDatabase();
+        res.json({
+            ok: true,
+            message: 'Seed complete. Logins use password123.',
+            credentials,
+        });
     } catch (error) {
         res.status(500).json({ ok: false, error: describeError(error) });
     }
