@@ -83,7 +83,7 @@ export async function issueBackupCodes(userId: string): Promise<string[]> {
         db.mfa_backup_codes.createMany({
             data: codes.map((code) => ({ user_id: userId, code_hash: hashCode(code) })),
         }),
-    ]);
+    ], { timeout: 30000 });
 
     return codes;
 }
