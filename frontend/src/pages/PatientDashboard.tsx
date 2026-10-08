@@ -80,50 +80,11 @@ const PatientDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Top Navbar */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="text-blue-600 w-8 h-8" />
-          <h1 className="text-xl font-bold text-slate-800">MediLocker</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link to="/patient/notifications" className="relative p-2 text-slate-500 hover:text-slate-700 bg-slate-100 rounded-full">
-            <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-            <Activity className="w-5 h-5" />
-          </Link>
-          <Link to="/patient/settings" className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold">
-            {summary.profile.name.charAt(0)}
-          </Link>
-          <button onClick={logout} className="text-sm font-semibold text-slate-500 hover:text-slate-800">Logout</button>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
-
-        {/* Left Sidebar Menu */}
-        <aside className="w-full lg:w-64 shrink-0">
-          <nav className="space-y-2 sticky top-24">
-            <Link to="/patient/dashboard" className="flex items-center gap-3 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-sm shadow-blue-200">
-              <Activity className="w-5 h-5" /> Dashboard
-            </Link>
-            <Link to="/patient/vault" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-medium transition-colors">
-              <FileText className="w-5 h-5" /> Medical Vault
-            </Link>
-            <Link to="/patient/consent" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-medium transition-colors">
-              <ShieldCheck className="w-5 h-5" /> Consents ({summary.activeConsentsCount})
-            </Link>
-            <Link to="/patient/vitals" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-medium transition-colors">
-              <Activity className="w-5 h-5" /> Health Vitals
-            </Link>
-            <Link to="/patient/consultations" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-medium transition-colors">
-              <Clock className="w-5 h-5" /> Consultations
-            </Link>
-          </nav>
-        </aside>
+    <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans">
+      <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Main Content */}
-        <main className="flex-1 space-y-8">
+        <main className="space-y-8">
 
           {/* Profile Header */}
           <section className="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-3xl p-8 text-white flex flex-col md:flex-row items-center justify-between shadow-lg">
