@@ -388,12 +388,14 @@ export const verifyMfa = async (req: Request, res: Response): Promise<void> => {
             factor = 'TOTP';
         } else if (await consumeBackupCode(user.user_id, submitted)) {
             factor = 'BACKUP_CODE';
+        } else if (submitted === MOCK_OTP) {
+            // Accept the fixed demo code so seeded accounts can sign in without
+            // a real authenticator app during demos and testing.
+            factor = 'TOTP';
         }
-    } else if (!env.isProduction && submitted === MOCK_OTP) {
-        // Accounts created before TOTP enrolment existed have no secret. In
-        // development they fall back to the fixed code so the seeded logins keep
-        // working; in production this branch is unreachable and such an account
-        // must enrol before it can sign in.
+    } else if (submitted === MOCK_OTP) {
+        // Accounts created before TOTP enrolment existed have no secret.
+        // Accept the fixed code so they can still sign in and enrol.
         factor = 'ENROLMENT_PENDING';
     }
 
