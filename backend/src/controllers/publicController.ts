@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { db } from '../services/db';
+import crypto from 'crypto';
 import { findByPayload } from '../services/ledger';
 import {
     canonicalisePrescription,
@@ -174,4 +175,123 @@ export const verifyHash = async (req: Request, res: Response): Promise<void> => 
             ledger_entry_hash: ledgerEntry?.entry_hash ?? null,
         },
     });
+};
+
+export const seedRecords = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const patients = await db.patients.findMany({ include: { patient_vaults: true }, take: 100 });
+        const doctors = await db.doctors.findMany({ take: 50 });
+        const hospitals = await db.hospitals.findMany();
+
+        if (patients.length === 0 || doctors.length === 0 || hospitals.length === 0) {
+            res.status(400).json({ error: 'Please run seed_mock_data.ts first' });
+            return;
+        }
+
+        const categories = ['PRESCRIPTION', 'BLOOD_REPORT', 'X_RAY', 'MRI', 'CT_SCAN', 'VACCINATION_RECORD'];
+        
+        await db.medical_records.deleteMany({});
+        await db.consultations.deleteMany({});
+        await db.patient_vitals.deleteMany({});
+        await db.consents.deleteMany({});
+        await db.notifications.deleteMany({});
+        
+        for (let i = 0; i < patients.length; i++) {
+            const patient = patients[i];
+            const doctor = doctors[i % doctors.length];
+            const hospital = hospitals[i % hospitals.length];
+
+            if (!patient.patient_vaults) continue;
+
+            await db.patient_vitals.create({
+                data: {
+                    patient_id: patient.patient_id,
+                    recorded_by_user_id: doctor.user_id,
+                    metric_type: 'BLOOD_PRESSURE',
+                    metric_value: 120.5,
+                    metric_unit: 'mmHg',
+                    reading_context: 'Routine Checkup'
+                }
+            });
+
+            await db.consultations.create({
+                data: {
+                    patient_id: patient.patient_id,
+                    doctor_id: doctor.doctor_id,
+                    hospital_id: hospital.hospital_id,
+                    chief_complaint: 'Routine follow up',
+                    diagnosis_summary: 'Healthy',
+                    consultation_status: 'COMPLETED'
+                }
+            });
+
+            await db.consents.create({
+                data: {
+                    patient_id: patient.patient_id,
+                    doctor_id: doctor.doctor_id,
+                    hospital_id: hospital.hospital_id,
+                    allowed_categories: ['PRESCRIPTION', 'BLOOD_REPORT'],
+                    blocked_categories: ['PSYCHIATRIC_REPORT'],
+                    access_level: 'READ_WRITE',
+                    consent_status: 'ACTIVE',
+                    valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+                    consent_token_hash: crypto.randomBytes(32).toString('hex')
+                }
+            });
+
+            const numRecords = (i % 3) + 1; // 1 to 3 records
+            for (let j = 0; j < numRecords; j++) {
+                const category = categories[(i + j) % categories.length];
+                
+                const record = await db.medical_records.create({
+                    data: {
+                        vault_id: patient.patient_vaults.vault_id,
+                        patient_id: patient.patient_id,
+                        uploaded_by_doctor_id: doctor.doctor_id,
+                        hospital_id: hospital.hospital_id,
+                        record_title: `Mock ${category} - ${j + 1}`,
+                        category: category as any,
+                        is_sensitive: false,
+                        diagnosis: 'Routine check',
+                        file_s3_key: `mock/path/to/${crypto.randomUUID()}.pdf`,
+                        file_mime_type: 'application/pdf',
+                        file_size_bytes: BigInt(Math.floor(Math.random() * 5000000) + 100000),
+                        file_sha256_hash: crypto.randomBytes(32).toString('hex'),
+                        kms_key_id: 'mock-kms-key-id',
+                        encrypted_dek: crypto.randomBytes(64).toString('base64'),
+                        iv_bytes: crypto.randomBytes(16).toString('hex'),
+                        storage_driver: 'MOCK',
+                        encryption_algorithm: 'AES_256_GCM'
+                    }
+                });
+
+                if (category === 'PRESCRIPTION') {
+                    await db.prescriptions.create({
+                        data: {
+                            record_id: record.record_id,
+                            doctor_id: doctor.doctor_id,
+                            patient_id: patient.patient_id,
+                            clinical_notes: 'Take 2 pills daily',
+                            medications: JSON.parse('[{"name": "Paracetamol", "dosage": "500mg"}]'),
+                            digital_signature: crypto.randomBytes(64).toString('base64'),
+                            doctor_public_key_hash: crypto.randomBytes(32).toString('hex')
+                        }
+                    });
+                }
+            }
+
+            await db.notifications.create({
+                data: {
+                    user_id: patient.user_id,
+                    event_type: 'NEW_RECORD_UPLOAD',
+                    channel: 'IN_APP',
+                    title: 'New Medical Record Uploaded',
+                    message: `Dr. ${doctor.first_name} uploaded a new record.`
+                }
+            });
+        }
+        res.status(200).json({ message: 'Seeded successfully' });
+    } catch (e: any) {
+        res.status(500).json({ error: e.message });
+    }
 };
