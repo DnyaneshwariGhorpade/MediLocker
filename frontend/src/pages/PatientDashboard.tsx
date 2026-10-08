@@ -3,11 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  Activity,
-  Clock,
   FileText,
   CalendarDays,
-  ShieldCheck,
   QrCode,
   Droplet
 } from 'lucide-react';
@@ -26,7 +23,7 @@ import { Line } from 'react-chartjs-2';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const PatientDashboard = () => {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const [summary, setSummary] = useState<any>(null);
   const [vitals, setVitals] = useState<any[]>([]);
 
