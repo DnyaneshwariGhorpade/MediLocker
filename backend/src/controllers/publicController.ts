@@ -197,9 +197,9 @@ export const seedRecords = async (req: Request, res: Response): Promise<void> =>
         await db.notifications.deleteMany({});
         
         for (let i = 0; i < patients.length; i++) {
-            const patient = patients[i];
-            const doctor = doctors[i % doctors.length];
-            const hospital = hospitals[i % hospitals.length];
+            const patient = patients[i]!;
+            const doctor = doctors[i % doctors.length]!;
+            const hospital = hospitals[i % hospitals.length]!;
 
             if (!patient.patient_vaults) continue;
 
