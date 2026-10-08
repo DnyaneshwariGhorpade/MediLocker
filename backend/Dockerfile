@@ -7,7 +7,7 @@ WORKDIR /app
 
 # Dependencies first, so a source-only change does not reinstall them.
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
 COPY prisma ./prisma
 COPY prisma7.config.ts ./
@@ -28,7 +28,7 @@ ENV NODE_ENV=production
 RUN apk add --no-cache libc6-compat tini
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
