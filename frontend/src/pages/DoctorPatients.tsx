@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { Users, Search, ShieldCheck, ShieldAlert, Key, Eye, CheckCircle2 } from 'lucide-react';
+import { Users, Search, ShieldCheck, ShieldAlert, Key, Eye, CheckCircle2, UploadCloud, FileSignature, Calendar } from 'lucide-react';
 
 const DoctorPatients = () => {
   const location = useLocation();
@@ -124,20 +124,46 @@ const DoctorPatients = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
                 {hasConsent ? (
-                  <div className="text-right">
-                    <div className="flex items-center justify-end gap-2 text-emerald-700 font-bold mb-1">
-                      <ShieldCheck className="w-5 h-5" /> Consent Active
+                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                    <div className="text-right sm:border-r sm:border-emerald-200 sm:pr-4">
+                      <div className="flex items-center justify-end gap-1.5 text-emerald-800 font-bold text-xs mb-0.5">
+                        <ShieldCheck className="w-4 h-4 text-emerald-600" /> Consent Active
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-medium">Expires: {new Date(consentDetails.valid_until).toLocaleDateString()}</p>
                     </div>
-                    <p className="text-xs text-emerald-600 font-medium">Expires: {new Date(consentDetails.valid_until).toLocaleString()}</p>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        to="/doctor/upload"
+                        state={{ vaultNumber: patient.vault_number }}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                      >
+                        <UploadCloud className="w-3.5 h-3.5" /> Upload File
+                      </Link>
+                      <Link
+                        to="/doctor/prescriptions"
+                        state={{ vaultNumber: patient.vault_number }}
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                      >
+                        <FileSignature className="w-3.5 h-3.5" /> Prescribe
+                      </Link>
+                      <Link
+                        to="/doctor/consultations"
+                        state={{ vaultNumber: patient.vault_number }}
+                        className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                      >
+                        <Calendar className="w-3.5 h-3.5" /> Encounter
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex flex-col items-end gap-3">
-                    <div className="flex items-center gap-2 text-red-600 font-bold">
+                    <div className="flex items-center gap-2 text-rose-600 font-bold">
                       <ShieldAlert className="w-5 h-5" /> No Active Consent
                     </div>
-                    <button onClick={requestConsent} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-colors text-sm">
+                    <button onClick={requestConsent} className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-colors text-sm">
                       Request Access
                     </button>
                   </div>

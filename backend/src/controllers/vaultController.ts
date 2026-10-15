@@ -45,13 +45,12 @@ export const getRecords = async (req: AuthRequest, res: Response): Promise<void>
         whereClause.category = category as $Enums.record_category_enum;
     }
 
-    if (search) {
-        // `medical_records` has no description column; diagnosis and tags are
-        // the searchable free-text fields.
+    if (search && search.trim() !== '') {
+        const trimmed = search.trim();
         whereClause.OR = [
-            { record_title: { contains: search, mode: 'insensitive' } },
-            { diagnosis: { contains: search, mode: 'insensitive' } },
-            { tags: { has: search } },
+            { record_title: { contains: trimmed, mode: 'insensitive' } },
+            { diagnosis: { contains: trimmed, mode: 'insensitive' } },
+            { tags: { has: trimmed } },
         ];
     }
 
@@ -233,12 +232,13 @@ export const uploadRecord = async (req: AuthRequest, res: Response): Promise<voi
 
     const { vault_number, record_title, category, diagnosis, tags, record_date } = req.body;
 
-    const vault = await db.patient_vaults.findUnique({
-        where: { vault_number },
+    const trimmedVaultNumber = (vault_number || '').trim();
+    const vault = await db.patient_vaults.findFirst({
+        where: { vault_number: { equals: trimmedVaultNumber, mode: 'insensitive' } },
         include: { patients: { select: { user_id: true, patient_id: true } } },
     });
     if (!vault) {
-        res.status(404).json({ message: 'Patient Vault not found' });
+        res.status(404).json({ message: `Patient Vault "${trimmedVaultNumber}" not found` });
         return;
     }
 

@@ -1,0 +1,631 @@
+{
+  "hospitals": [
+    {
+      "email": "citycarehospital@gmail.com",
+      "phone_number": "9876501001",
+      "password": "password123",
+      "hospital_name": "City Care Hospital",
+      "registration_number": "HOSP-REG-1001",
+      "hospital_type": "PRIVATE_HOSPITAL",
+      "contact_email": "citycarehospital.contact@gmail.com",
+      "contact_phone": "9876501002",
+      "city": "Pune",
+      "state": "Maharashtra",
+      "pincode": "411001"
+    },
+    {
+      "email": "lifelineclinic@gmail.com",
+      "phone_number": "9823401003",
+      "password": "password123",
+      "hospital_name": "Lifeline Clinic",
+      "registration_number": "HOSP-REG-1002",
+      "hospital_type": "CLINIC",
+      "contact_email": "lifelineclinic.contact@gmail.com",
+      "contact_phone": "9823401004",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "pincode": "400001"
+    },
+    {
+      "email": "sunrisehospital@gmail.com",
+      "phone_number": "9765401005",
+      "password": "password123",
+      "hospital_name": "Sunrise Hospital",
+      "registration_number": "HOSP-REG-1003",
+      "hospital_type": "MULTI_SPECIALTY",
+      "contact_email": "sunrisehospital.contact@gmail.com",
+      "contact_phone": "9765401006",
+      "city": "Nagpur",
+      "state": "Maharashtra",
+      "pincode": "440001"
+    },
+    {
+      "email": "healthplusclinic@gmail.com",
+      "phone_number": "9890101007",
+      "password": "password123",
+      "hospital_name": "Health Plus Clinic",
+      "registration_number": "HOSP-REG-1004",
+      "hospital_type": "CLINIC",
+      "contact_email": "healthplusclinic.contact@gmail.com",
+      "contact_phone": "9890101008",
+      "city": "Nashik",
+      "state": "Maharashtra",
+      "pincode": "422001"
+    },
+    {
+      "email": "wellcarehospital@gmail.com",
+      "phone_number": "9812301009",
+      "password": "password123",
+      "hospital_name": "WellCare Hospital",
+      "registration_number": "HOSP-REG-1005",
+      "hospital_type": "PRIVATE_HOSPITAL",
+      "contact_email": "wellcarehospital.contact@gmail.com",
+      "contact_phone": "9812301010",
+      "city": "Aurangabad",
+      "state": "Maharashtra",
+      "pincode": "431001"
+    }
+  ],
+  "doctors": {
+    "HOSP-REG-1001": [
+      {
+        "email": "dr.raj.patil1@gmail.com",
+        "phone_number": "9200000001",
+        "password": "password123",
+        "mrn": "MRN-5001",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Raj",
+        "last_name": "Patil",
+        "specialization": "General Physician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.neha.sharma2@gmail.com",
+        "phone_number": "9200000002",
+        "password": "password123",
+        "mrn": "MRN-5002",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Neha",
+        "last_name": "Sharma",
+        "specialization": "Cardiologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.amit.joshi3@gmail.com",
+        "phone_number": "9200000003",
+        "password": "password123",
+        "mrn": "MRN-5003",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Amit",
+        "last_name": "Joshi",
+        "specialization": "Dermatologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.pooja.kulkarni4@gmail.com",
+        "phone_number": "9200000004",
+        "password": "password123",
+        "mrn": "MRN-5004",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Pooja",
+        "last_name": "Kulkarni",
+        "specialization": "Pediatrician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.rohit.deshmukh5@gmail.com",
+        "phone_number": "9200000005",
+        "password": "password123",
+        "mrn": "MRN-5005",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Rohit",
+        "last_name": "Deshmukh",
+        "specialization": "Orthopedic Surgeon",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.snehal.pawar6@gmail.com",
+        "phone_number": "9200000006",
+        "password": "password123",
+        "mrn": "MRN-5006",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Snehal",
+        "last_name": "Pawar",
+        "specialization": "Gynecologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.vivek.jadhav7@gmail.com",
+        "phone_number": "9200000007",
+        "password": "password123",
+        "mrn": "MRN-5007",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Vivek",
+        "last_name": "Jadhav",
+        "specialization": "ENT Specialist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.kiran.more8@gmail.com",
+        "phone_number": "9200000008",
+        "password": "password123",
+        "mrn": "MRN-5008",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Kiran",
+        "last_name": "More",
+        "specialization": "Neurologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.anjali.shinde9@gmail.com",
+        "phone_number": "9200000009",
+        "password": "password123",
+        "mrn": "MRN-5009",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Anjali",
+        "last_name": "Shinde",
+        "specialization": "Ophthalmologist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.suresh.kale10@gmail.com",
+        "phone_number": "9200000010",
+        "password": "password123",
+        "mrn": "MRN-5010",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Suresh",
+        "last_name": "Kale",
+        "specialization": "General Surgeon",
+        "qualification": "MBBS, MS"
+      }
+    ],
+    "HOSP-REG-1002": [
+      {
+        "email": "dr.priya.mane11@gmail.com",
+        "phone_number": "9200000011",
+        "password": "password123",
+        "mrn": "MRN-5011",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Priya",
+        "last_name": "Mane",
+        "specialization": "General Physician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.akshay.bhosale12@gmail.com",
+        "phone_number": "9200000012",
+        "password": "password123",
+        "mrn": "MRN-5012",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Akshay",
+        "last_name": "Bhosale",
+        "specialization": "Cardiologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.meena.chavan13@gmail.com",
+        "phone_number": "9200000013",
+        "password": "password123",
+        "mrn": "MRN-5013",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Meena",
+        "last_name": "Chavan",
+        "specialization": "Dermatologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.nikhil.raut14@gmail.com",
+        "phone_number": "9200000014",
+        "password": "password123",
+        "mrn": "MRN-5014",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Nikhil",
+        "last_name": "Raut",
+        "specialization": "Pediatrician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.ritu.pande15@gmail.com",
+        "phone_number": "9200000015",
+        "password": "password123",
+        "mrn": "MRN-5015",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Ritu",
+        "last_name": "Pande",
+        "specialization": "Orthopedic Surgeon",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.sameer.kadam16@gmail.com",
+        "phone_number": "9200000016",
+        "password": "password123",
+        "mrn": "MRN-5016",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Sameer",
+        "last_name": "Kadam",
+        "specialization": "Gynecologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.swati.gawade17@gmail.com",
+        "phone_number": "9200000017",
+        "password": "password123",
+        "mrn": "MRN-5017",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Swati",
+        "last_name": "Gawade",
+        "specialization": "ENT Specialist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.manish.sutar18@gmail.com",
+        "phone_number": "9200000018",
+        "password": "password123",
+        "mrn": "MRN-5018",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Manish",
+        "last_name": "Sutar",
+        "specialization": "Neurologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.kavita.naik19@gmail.com",
+        "phone_number": "9200000019",
+        "password": "password123",
+        "mrn": "MRN-5019",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Kavita",
+        "last_name": "Naik",
+        "specialization": "Ophthalmologist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.deepak.gore20@gmail.com",
+        "phone_number": "9200000020",
+        "password": "password123",
+        "mrn": "MRN-5020",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Deepak",
+        "last_name": "Gore",
+        "specialization": "General Surgeon",
+        "qualification": "MBBS, MS"
+      }
+    ],
+    "HOSP-REG-1003": [
+      {
+        "email": "dr.rahul.deshmukh21@gmail.com",
+        "phone_number": "9200000021",
+        "password": "password123",
+        "mrn": "MRN-5021",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Rahul",
+        "last_name": "Deshmukh",
+        "specialization": "General Physician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.madhuri.patil22@gmail.com",
+        "phone_number": "9200000022",
+        "password": "password123",
+        "mrn": "MRN-5022",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Madhuri",
+        "last_name": "Patil",
+        "specialization": "Cardiologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.sanjay.sharma23@gmail.com",
+        "phone_number": "9200000023",
+        "password": "password123",
+        "mrn": "MRN-5023",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Sanjay",
+        "last_name": "Sharma",
+        "specialization": "Dermatologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.aarti.joshi24@gmail.com",
+        "phone_number": "9200000024",
+        "password": "password123",
+        "mrn": "MRN-5024",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Aarti",
+        "last_name": "Joshi",
+        "specialization": "Pediatrician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.vikas.kulkarni25@gmail.com",
+        "phone_number": "9200000025",
+        "password": "password123",
+        "mrn": "MRN-5025",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Vikas",
+        "last_name": "Kulkarni",
+        "specialization": "Orthopedic Surgeon",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.pallavi.pawar26@gmail.com",
+        "phone_number": "9200000026",
+        "password": "password123",
+        "mrn": "MRN-5026",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Pallavi",
+        "last_name": "Pawar",
+        "specialization": "Gynecologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.chetan.jadhav27@gmail.com",
+        "phone_number": "9200000027",
+        "password": "password123",
+        "mrn": "MRN-5027",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Chetan",
+        "last_name": "Jadhav",
+        "specialization": "ENT Specialist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.rashmi.more28@gmail.com",
+        "phone_number": "9200000028",
+        "password": "password123",
+        "mrn": "MRN-5028",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Rashmi",
+        "last_name": "More",
+        "specialization": "Neurologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.pravin.shinde29@gmail.com",
+        "phone_number": "9200000029",
+        "password": "password123",
+        "mrn": "MRN-5029",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Pravin",
+        "last_name": "Shinde",
+        "specialization": "Ophthalmologist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.nandini.kale30@gmail.com",
+        "phone_number": "9200000030",
+        "password": "password123",
+        "mrn": "MRN-5030",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Nandini",
+        "last_name": "Kale",
+        "specialization": "General Surgeon",
+        "qualification": "MBBS, MS"
+      }
+    ],
+    "HOSP-REG-1004": [
+      {
+        "email": "dr.aditya.patil31@gmail.com",
+        "phone_number": "9200000031",
+        "password": "password123",
+        "mrn": "MRN-5031",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Aditya",
+        "last_name": "Patil",
+        "specialization": "General Physician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.shreya.sharma32@gmail.com",
+        "phone_number": "9200000032",
+        "password": "password123",
+        "mrn": "MRN-5032",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Shreya",
+        "last_name": "Sharma",
+        "specialization": "Cardiologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.manoj.joshi33@gmail.com",
+        "phone_number": "9200000033",
+        "password": "password123",
+        "mrn": "MRN-5033",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Manoj",
+        "last_name": "Joshi",
+        "specialization": "Dermatologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.komal.kulkarni34@gmail.com",
+        "phone_number": "9200000034",
+        "password": "password123",
+        "mrn": "MRN-5034",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Komal",
+        "last_name": "Kulkarni",
+        "specialization": "Pediatrician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.gaurav.deshmukh35@gmail.com",
+        "phone_number": "9200000035",
+        "password": "password123",
+        "mrn": "MRN-5035",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Gaurav",
+        "last_name": "Deshmukh",
+        "specialization": "Orthopedic Surgeon",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.poonam.pawar36@gmail.com",
+        "phone_number": "9200000036",
+        "password": "password123",
+        "mrn": "MRN-5036",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Poonam",
+        "last_name": "Pawar",
+        "specialization": "Gynecologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.yash.jadhav37@gmail.com",
+        "phone_number": "9200000037",
+        "password": "password123",
+        "mrn": "MRN-5037",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Yash",
+        "last_name": "Jadhav",
+        "specialization": "ENT Specialist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.riya.more38@gmail.com",
+        "phone_number": "9200000038",
+        "password": "password123",
+        "mrn": "MRN-5038",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Riya",
+        "last_name": "More",
+        "specialization": "Neurologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.amol.shinde39@gmail.com",
+        "phone_number": "9200000039",
+        "password": "password123",
+        "mrn": "MRN-5039",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Amol",
+        "last_name": "Shinde",
+        "specialization": "Ophthalmologist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.vaishnavi.kale40@gmail.com",
+        "phone_number": "9200000040",
+        "password": "password123",
+        "mrn": "MRN-5040",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Vaishnavi",
+        "last_name": "Kale",
+        "specialization": "General Surgeon",
+        "qualification": "MBBS, MS"
+      }
+    ],
+    "HOSP-REG-1005": [
+      {
+        "email": "dr.siddharth.patil41@gmail.com",
+        "phone_number": "9200000041",
+        "password": "password123",
+        "mrn": "MRN-5041",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Siddharth",
+        "last_name": "Patil",
+        "specialization": "General Physician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.rutuja.sharma42@gmail.com",
+        "phone_number": "9200000042",
+        "password": "password123",
+        "mrn": "MRN-5042",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Rutuja",
+        "last_name": "Sharma",
+        "specialization": "Cardiologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.ajay.joshi43@gmail.com",
+        "phone_number": "9200000043",
+        "password": "password123",
+        "mrn": "MRN-5043",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Ajay",
+        "last_name": "Joshi",
+        "specialization": "Dermatologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.mansi.kulkarni44@gmail.com",
+        "phone_number": "9200000044",
+        "password": "password123",
+        "mrn": "MRN-5044",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Mansi",
+        "last_name": "Kulkarni",
+        "specialization": "Pediatrician",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.harsh.deshmukh45@gmail.com",
+        "phone_number": "9200000045",
+        "password": "password123",
+        "mrn": "MRN-5045",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Harsh",
+        "last_name": "Deshmukh",
+        "specialization": "Orthopedic Surgeon",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.sonali.pawar46@gmail.com",
+        "phone_number": "9200000046",
+        "password": "password123",
+        "mrn": "MRN-5046",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Sonali",
+        "last_name": "Pawar",
+        "specialization": "Gynecologist",
+        "qualification": "MBBS, MD"
+      },
+      {
+        "email": "dr.omkar.jadhav47@gmail.com",
+        "phone_number": "9200000047",
+        "password": "password123",
+        "mrn": "MRN-5047",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Omkar",
+        "last_name": "Jadhav",
+        "specialization": "ENT Specialist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.isha.more48@gmail.com",
+        "phone_number": "9200000048",
+        "password": "password123",
+        "mrn": "MRN-5048",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Isha",
+        "last_name": "More",
+        "specialization": "Neurologist",
+        "qualification": "MBBS, MD, DM"
+      },
+      {
+        "email": "dr.tejas.shinde49@gmail.com",
+        "phone_number": "9200000049",
+        "password": "password123",
+        "mrn": "MRN-5049",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Tejas",
+        "last_name": "Shinde",
+        "specialization": "Ophthalmologist",
+        "qualification": "MBBS, MS"
+      },
+      {
+        "email": "dr.divya.kale50@gmail.com",
+        "phone_number": "9200000050",
+        "password": "password123",
+        "mrn": "MRN-5050",
+        "state_medical_council": "Maharashtra Medical Council",
+        "first_name": "Divya",
+        "last_name": "Kale",
+        "specialization": "General Surgeon",
+        "qualification": "MBBS, MS"
+      }
+    ]
+  }
+}

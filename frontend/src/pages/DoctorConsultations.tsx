@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
-import { Calendar, Search, FileText, CheckCircle2 } from 'lucide-react';
+import { Calendar, Search, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 
 const DoctorConsultations = () => {
+  const location = useLocation();
 
   const [patientSearch, setPatientSearch] = useState('');
   const [patientInfo, setPatientInfo] = useState<any>(null);
@@ -13,21 +15,38 @@ const DoctorConsultations = () => {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSearchPatient = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const passedVault = (location.state as any)?.vaultNumber;
+    if (passedVault) {
+      setPatientSearch(passedVault);
+      void executeSearch(passedVault);
+    }
+  }, [location.state]);
+
+  const executeSearch = async (query: string) => {
+    if (!query) return;
+    setError('');
     try {
       const res = await api.raw('/api/v1/doctor/check-consent', {
         method: 'POST',
-        body: JSON.stringify({ identifier: patientSearch })
+        body: JSON.stringify({ identifier: query })
       });
       if (res.ok) {
         const data = await res.json();
         setPatientInfo(data.patient);
       } else {
-        alert("Patient not found or no access.");
+        setError('Patient not found or no active doctor consent.');
       }
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      setError('Network error searching for patient.');
+    }
+  };
+
+  const handleSearchPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeSearch(patientSearch);
   };
 
   const handleLogEncounter = async (e: React.FormEvent) => {
@@ -35,6 +54,7 @@ const DoctorConsultations = () => {
     if (!patientInfo) return;
 
     setSaving(true);
+    setError('');
     try {
       const res = await api.raw('/api/v1/doctor/consultations', {
         method: 'POST',
@@ -46,18 +66,24 @@ const DoctorConsultations = () => {
         })
       });
 
-      if (res.ok) {
-        setSaved(true);
-        setTimeout(() => {
-          setSaved(false);
-          setChiefComplaint('');
-          setDiagnosisSummary('');
-          setFollowUpDate('');
-          setPatientInfo(null);
-        }, 3000);
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to record clinical encounter.');
       }
-    } catch (err) { console.error(err); }
-    setSaving(false);
+
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        setChiefComplaint('');
+        setDiagnosisSummary('');
+        setFollowUpDate('');
+        setPatientInfo(null);
+      }, 3000);
+    } catch (err: any) {
+      setError(err.message || 'Error recording encounter.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -78,6 +104,12 @@ const DoctorConsultations = () => {
         {saved && (
           <div className="bg-emerald-50 text-emerald-800 p-4 rounded-xl font-bold flex items-center gap-2 border border-emerald-200">
             <CheckCircle2 className="w-5 h-5" /> Clinical Encounter logged successfully.
+          </div>
+        )}
+
+        {error && (
+          <div className="bg-red-50 text-red-800 p-4 rounded-xl font-bold flex items-center gap-2 border border-red-200">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" /> {error}
           </div>
         )}
 

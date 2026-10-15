@@ -511,3 +511,35 @@ export const flagRecord = async (req: AuthRequest, res: Response): Promise<void>
 
     res.status(201).json({ message: 'Record flagged successfully', flag });
 };
+
+// POST /api/v1/doctor/signing-key
+export const updateSigningKey = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { userId } = requireUser(req);
+        const { public_key_pem } = req.body;
+
+        if (!public_key_pem || !isUsablePublicKey(public_key_pem)) {
+            res.status(400).json({ message: 'Invalid public key format' });
+            return;
+        }
+
+        const doctor = await db.doctors.findUnique({ where: { user_id: userId } });
+        if (!doctor) {
+            res.status(404).json({ message: 'Doctor profile not found' });
+            return;
+        }
+
+        const fingerprint = fingerprintPublicKey(public_key_pem);
+        await db.doctors.update({
+            where: { doctor_id: doctor.doctor_id },
+            data: {
+                public_key_pem,
+                key_fingerprint: fingerprint
+            }
+        });
+
+        res.json({ message: 'Signing key registered successfully for this device', fingerprint });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error registering signing key', error: error.message });
+    }
+};

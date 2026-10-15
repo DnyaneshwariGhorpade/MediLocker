@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { canonicalisePrescription, hasSigningKey, signPayload } from '../lib/crypto';
@@ -6,6 +7,7 @@ import { FileSignature, Plus, Trash2, ShieldCheck, AlertCircle, Fingerprint, Sea
 
 const DoctorPrescriptions = () => {
   const { token } = useAuth();
+  const location = useLocation();
 
   // Patient Context
   const [patientId, setPatientId] = useState('');
@@ -39,21 +41,34 @@ const DoctorPrescriptions = () => {
     })();
   }, [token]);
 
-  const handleSearchPatient = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const passedVault = (location.state as any)?.vaultNumber;
+    if (passedVault) {
+      setPatientSearch(passedVault);
+      void executeSearch(passedVault);
+    }
+  }, [location.state]);
+
+  const executeSearch = async (query: string) => {
+    if (!query) return;
     try {
       const res = await api.raw('/api/v1/doctor/check-consent', {
         method: 'POST',
-        body: JSON.stringify({ identifier: patientSearch })
+        body: JSON.stringify({ identifier: query })
       });
       if (res.ok) {
         const data = await res.json();
         setPatientInfo(data.patient);
         setPatientId(data.patient.id);
       } else {
-        alert("Patient not found or no access.");
+        alert("Patient not found or no active consent.");
       }
     } catch (err) { console.error(err); }
+  };
+
+  const handleSearchPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await executeSearch(patientSearch);
   };
 
   const handleAddMedication = () => {
@@ -132,6 +147,9 @@ const DoctorPrescriptions = () => {
       });
 
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Server rejected prescription signature');
+      }
 
       setVerifyUrl(data.verify_url ?? '');
       setSigningStep('DONE');

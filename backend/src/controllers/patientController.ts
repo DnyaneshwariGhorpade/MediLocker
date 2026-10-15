@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { db } from '../services/db';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
@@ -77,7 +78,10 @@ export const getVitalsTrends = async (req: AuthRequest, res: Response): Promise<
     try {
         const userId = req.user?.userId;
         const patient = await db.patients.findUnique({ where: { user_id: userId } });
-        if (!patient) return;
+        if (!patient) {
+            res.status(404).json({ message: 'Patient not found' });
+            return;
+        }
 
         // Fetching last 30 days of vitals for trends
         const thirtyDaysAgo = new Date();
@@ -91,7 +95,10 @@ export const getVitalsTrends = async (req: AuthRequest, res: Response): Promise<
             orderBy: { recorded_at: 'asc' }
         });
 
-        res.json(vitals);
+        res.json(vitals.map(v => ({
+            ...v,
+            metric_value: Number(v.metric_value)
+        })));
     } catch (error: any) {
         res.status(500).json({ message: 'Error fetching vitals trends', error: error.message });
     }
@@ -112,7 +119,10 @@ export const getVitals = async (req: AuthRequest, res: Response): Promise<void> 
             orderBy: { recorded_at: 'desc' }
         });
 
-        res.json(vitals);
+        res.json(vitals.map(v => ({
+            ...v,
+            metric_value: Number(v.metric_value)
+        })));
     } catch (error: any) {
         res.status(500).json({ message: 'Error fetching vitals', error: error.message });
     }
@@ -133,14 +143,18 @@ export const addVital = async (req: AuthRequest, res: Response): Promise<void> =
         const newVital = await db.patient_vitals.create({
             data: {
                 patient_id: patient.patient_id,
+                recorded_by_user_id: patient.user_id,
                 metric_type,
-                metric_value,
+                metric_value: new Prisma.Decimal(metric_value),
                 metric_unit,
-                reading_context
+                reading_context: reading_context || 'Routine'
             }
         });
 
-        res.status(201).json(newVital);
+        res.status(201).json({
+            ...newVital,
+            metric_value: Number(newVital.metric_value)
+        });
     } catch (error: any) {
         res.status(500).json({ message: 'Error adding vital', error: error.message });
     }
@@ -177,7 +191,7 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
         const userId = req.user?.userId;
         const patient = await db.patients.findUnique({ 
             where: { user_id: userId },
-            include: { users: true }
+            include: { users: true, patient_vaults: true }
         });
         if (!patient) {
             res.status(404).json({ message: 'Patient not found' });
@@ -193,6 +207,10 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
             city: patient.city,
             state: patient.state,
             pincode: patient.pincode,
+            blood_group: patient.blood_group,
+            gender: patient.gender,
+            date_of_birth: patient.date_of_birth,
+            vault_number: patient.patient_vaults?.vault_number || 'PENDING',
             emergency_contact_name: patient.emergency_contact_name,
             emergency_contact_phone: patient.emergency_contact_phone,
             emergency_contact_relation: patient.emergency_contact_relation,
@@ -239,5 +257,30 @@ export const updateEmergencySettings = async (req: AuthRequest, res: Response): 
         res.json({ message: 'Emergency settings updated successfully' });
     } catch (error: any) {
         res.status(500).json({ message: 'Error updating emergency settings', error: error.message });
+    }
+};
+
+// GET /api/v1/patient/doctors
+export const getVerifiedDoctors = async (_req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const doctors = await db.doctors.findMany({
+            where: { verification_status: 'VERIFIED' },
+            include: { hospitals: { select: { hospital_name: true } } },
+            orderBy: [{ last_name: 'asc' }, { first_name: 'asc' }]
+        });
+
+        res.json(
+            doctors.map((d) => ({
+                doctor_id: d.doctor_id,
+                first_name: d.first_name,
+                last_name: d.last_name,
+                specialization: d.specialization,
+                qualification: d.qualification,
+                mrn: d.mrn,
+                hospital_name: d.hospitals?.hospital_name || 'Independent Practice'
+            }))
+        );
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error fetching verified doctors', error: error.message });
     }
 };

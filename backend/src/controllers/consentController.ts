@@ -42,6 +42,12 @@ export const grantConsent = async (req: AuthRequest, res: Response): Promise<voi
             return;
         }
 
+        const doctor = await db.doctors.findUnique({ where: { doctor_id } });
+        if (!doctor) {
+            res.status(404).json({ message: 'Selected doctor does not exist' });
+            return;
+        }
+
         const validUntil = new Date(valid_until);
 
         // The consent token is the value a doctor's session presents to prove a
@@ -53,16 +59,42 @@ export const grantConsent = async (req: AuthRequest, res: Response): Promise<voi
             .update(`${patient.patient_id}:${doctor_id}:${validUntil.toISOString()}:${consentToken}`)
             .digest('hex');
 
+        // Supersede any prior active consents for this patient/doctor pair
+        await db.consents.updateMany({
+            where: {
+                patient_id: patient.patient_id,
+                doctor_id,
+                consent_status: 'ACTIVE'
+            },
+            data: {
+                consent_status: 'REVOKED',
+                revoked_at: new Date()
+            }
+        });
+
         const newConsent = await db.consents.create({
             data: {
                 patient_id: patient.patient_id,
                 doctor_id,
+                hospital_id: doctor.primary_hospital_id,
                 allowed_categories,
-                blocked_categories,
+                blocked_categories: blocked_categories || [],
                 consent_status: 'ACTIVE',
                 valid_until: validUntil,
                 access_level: access_level || 'READ_ONLY',
                 consent_token_hash: consentTokenHash
+            },
+            include: { doctors: true }
+        });
+
+        // Notify the doctor about newly granted access
+        await db.notifications.create({
+            data: {
+                user_id: doctor.user_id,
+                event_type: 'ACCESS_REQUEST',
+                title: 'Patient Access Granted',
+                message: `${patient.first_name} ${patient.last_name} has granted you ${access_level === 'DOWNLOAD' ? 'Read & Download' : 'Read-Only'} access to their medical records.`,
+                payload_json: { patient_id: patient.patient_id, consent_id: newConsent.consent_id }
             }
         });
 

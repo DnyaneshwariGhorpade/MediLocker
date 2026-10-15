@@ -7,7 +7,8 @@ import {
     signAndIssuePrescription,
     createConsultation,
     searchRecords,
-    flagRecord
+    flagRecord,
+    updateSigningKey
 } from '../controllers/doctorController';
 import { authenticateToken, authorizeRoles } from '../middlewares/authMiddleware';
 import { asyncHandler } from '../middlewares/errorHandler';
@@ -31,6 +32,7 @@ router.post('/check-consent', validate({ body: checkConsentSchema }), checkConse
 router.post('/request-consent', validate({ body: requestConsentSchema }), requestConsent);
 router.get('/patient-records/:vaultNumber', asyncHandler(getPatientRecords));
 router.post('/prescriptions/sign-and-issue', validate({ body: prescriptionSchema }), asyncHandler(signAndIssuePrescription));
+router.post('/signing-key', asyncHandler(updateSigningKey));
 router.post('/consultations', validate({ body: consultationSchema }), createConsultation);
 router.get('/records/search', validate({ query: doctorSearchQuerySchema }), asyncHandler(searchRecords));
 router.post('/records/flag', validate({ body: flagRecordSchema }), asyncHandler(flagRecord));

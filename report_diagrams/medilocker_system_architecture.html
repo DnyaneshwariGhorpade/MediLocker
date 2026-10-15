@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediLocker System Architecture</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background-color: #ffffff;
+            color: #1e293b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #0f172a;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .caption {
+            margin-bottom: 30px;
+            color: #64748b;
+            font-size: 14px;
+            text-align: center;
+            font-style: italic;
+        }
+
+        .svg-container {
+            width: 100%;
+            max-width: 1200px;
+            background: #ffffff;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .svg-container {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Figure 4.1: MediLocker System Architecture</h2>
+    <div class="caption">A zero-trust, cloud-based platform architecture illustrating data flow, role-based access,
+        cryptographic measures, and data persistency.</div>
+
+    <div class="svg-container">
+        <svg viewBox="0 0 1200 900" xmlns="http://www.w3.org/2000/svg">
+
+            <defs>
+                <!-- Shadows -->
+                <filter id="drop-shadow" x="-10%" y="-10%" width="130%" height="130%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.1" />
+                </filter>
+                <filter id="soft-shadow" x="-5%" y="-5%" width="110%" height="110%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.05" />
+                </filter>
+
+                <!-- Arrows -->
+                <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+                </marker>
+                <marker id="arrow-blue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <polygon points="0 0, 8 4, 0 8" fill="#3b82f6" />
+                </marker>
+                <marker id="arrow-dashed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <polygon points="0 0, 8 4, 0 8" fill="#94a3b8" />
+                </marker>
+            </defs>
+
+            <!-- Background grouping layers -->
+            <rect x="30" y="50" width="1140" height="180" rx="10" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+            <text x="50" y="80" font-size="16" font-weight="bold" fill="#475569">Presentation Layer — Frontend (React 19
+                hosted on Vercel)</text>
+
+            <rect x="30" y="270" width="1140" height="340" rx="10" fill="#f0f9ff" stroke="#bae6fd" stroke-width="2" />
+            <text x="50" y="300" font-size="16" font-weight="bold" fill="#0369a1">Application Layer — Backend
+                (Node.js/Express API Monolith hosted on Render)</text>
+
+            <rect x="30" y="650" width="1140" height="230" rx="10" fill="#fcfdfd" stroke="#cbd5e1" stroke-width="2" />
+            <text x="50" y="680" font-size="16" font-weight="bold" fill="#475569">Data & Persistence Layer</text>
+
+            <!-- ================= PRESENTATION LAYER ================= -->
+
+            <g transform="translate(60, 110)">
+                <rect width="180" height="90" rx="6" fill="#ffffff" stroke="#cbd5e1" filter="url(#drop-shadow)" />
+                <rect x="0" y="0" width="180" height="6" fill="#10b981" rx="2" />
+                <text x="90" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Patient
+                    Portal</text>
+                <text x="90" y="65" text-anchor="middle" font-size="11" fill="#64748b">Consents & Vault</text>
+            </g>
+
+            <g transform="translate(260, 110)">
+                <rect width="180" height="90" rx="6" fill="#ffffff" stroke="#cbd5e1" filter="url(#drop-shadow)" />
+                <rect x="0" y="0" width="180" height="6" fill="#3b82f6" rx="2" />
+                <text x="90" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Doctor
+                    Portal</text>
+                <text x="90" y="65" text-anchor="middle" font-size="11" fill="#64748b">Uploads & Signing</text>
+            </g>
+
+            <g transform="translate(460, 110)">
+                <rect width="180" height="90" rx="6" fill="#ffffff" stroke="#cbd5e1" filter="url(#drop-shadow)" />
+                <rect x="0" y="0" width="180" height="6" fill="#f59e0b" rx="2" />
+                <text x="90" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Hospital
+                    Admin</text>
+                <text x="90" y="65" text-anchor="middle" font-size="11" fill="#64748b">Staff & API Mgmt</text>
+            </g>
+
+            <g transform="translate(660, 110)">
+                <rect width="180" height="90" rx="6" fill="#ffffff" stroke="#cbd5e1" filter="url(#drop-shadow)" />
+                <rect x="0" y="0" width="180" height="6" fill="#8b5cf6" rx="2" />
+                <text x="90" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Platform
+                    Admin</text>
+                <text x="90" y="65" text-anchor="middle" font-size="11" fill="#64748b">System Health</text>
+            </g>
+
+            <g transform="translate(860, 110)">
+                <rect width="180" height="90" rx="6" fill="#ffffff" stroke="#cbd5e1" filter="url(#drop-shadow)" />
+                <rect x="0" y="0" width="180" height="6" fill="#ef4444" rx="2" />
+                <text x="90" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1e293b">Emergency
+                    User</text>
+                <text x="90" y="65" text-anchor="middle" font-size="11" fill="#64748b">Break-Glass Access</text>
+            </g>
+
+            <!-- Public Portal -->
+            <g transform="translate(1060, 110)">
+                <rect width="100" height="90" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-dasharray="4,2" />
+                <text x="50" y="45" text-anchor="middle" font-size="12" font-weight="bold" fill="#475569">Public</text>
+                <text x="50" y="65" text-anchor="middle" font-size="11" fill="#64748b">Verifier</text>
+            </g>
+
+            <!-- Traffic Arrows Down -->
+            <path d="M 150 200 L 400 305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+            <path d="M 350 200 L 450 305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+            <path d="M 550 200 L 580 305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+            <path d="M 750 200 L 620 305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+            <path d="M 950 200 L 680 305" stroke="#64748b" stroke-width="2" marker-end="url(#arrow)" fill="none" />
+            <path d="M 1110 200 L 750 305" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4"
+                marker-end="url(#arrow-dashed)" fill="none" />
+
+            <!-- HTTPS Label -->
+            <rect x="630" y="225" width="130" height="24" rx="12" fill="#ffffff" stroke="#cbd5e1" />
+            <text x="695" y="242" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">HTTPS / TLS
+                1.3</text>
+
+
+            <!-- ================= APPLICATION LAYER ================= -->
+
+            <!-- Express Router Box -->
+            <rect x="350" y="315" width="500" height="50" rx="6" fill="#0ea5e9" stroke="#0284c7"
+                filter="url(#drop-shadow)" />
+            <text x="600" y="345" text-anchor="middle" font-size="15" font-weight="bold" fill="#ffffff">API Gateway &
+                Request Router</text>
+
+            <path d="M 600 365 L 600 375" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+
+            <rect x="150" y="380" width="900" height="200" rx="8" fill="#ffffff" stroke="#bae6fd"
+                filter="url(#soft-shadow)" />
+            <text x="600" y="410" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">Core Modules &
+                Security Protocols</text>
+
+            <!-- Modules -->
+            <g transform="translate(180, 430)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Auth</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">JWT, TOTP MFA</text>
+            </g>
+
+            <g transform="translate(390, 430)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Consent
+                    Engine</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">Category Rule Eval</text>
+            </g>
+
+            <g transform="translate(600, 430)">
+                <rect width="210" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="105" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Medical
+                    Vault</text>
+                <text x="105" y="45" text-anchor="middle" font-size="11" fill="#64748b">AES-256 Envelope Crypto</text>
+            </g>
+
+            <g transform="translate(840, 430)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Signature
+                    Verify</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">ECDSA P-256 PKI</text>
+            </g>
+
+            <!-- Sub Modules -->
+            <g transform="translate(180, 500)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Break-Glass
+                    Module</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">Dual-OTP 4h Timer</text>
+            </g>
+
+            <g transform="translate(390, 500)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Notification
+                    Outbox</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">SMS / Email Queues</text>
+            </g>
+
+            <g transform="translate(600, 500)">
+                <rect width="210" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="105" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Integrity
+                    Anchoring</text>
+                <text x="105" y="45" text-anchor="middle" font-size="11" fill="#64748b">SHA-256 Chaining Logic</text>
+            </g>
+
+            <g transform="translate(840, 500)">
+                <rect width="180" height="60" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+                <text x="90" y="25" text-anchor="middle" font-size="13" font-weight="bold" fill="#0f172a">Cron
+                    Scheduler</text>
+                <text x="90" y="45" text-anchor="middle" font-size="11" fill="#64748b">Expiry & Hash Sweep</text>
+            </g>
+
+            <!-- Application to Data arrows -->
+            <path d="M 480 560 L 480 700" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+            <!-- Bi-directional arrows -->
+            <path d="M 470 700 L 470 560" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+
+            <path d="M 270 560 L 270 730" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+            <path d="M 260 730 L 260 560" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+
+            <path d="M 700 560 L 700 700" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+            <path d="M 710 700 L 710 560" stroke="#0369a1" stroke-width="2" marker-end="url(#arrow-blue)" fill="none" />
+
+            <path d="M 930 560 L 930 730" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4"
+                marker-end="url(#arrow-dashed)" fill="none" />
+
+
+            <!-- ================= DATA LAYER ================= -->
+
+            <!-- PostgreSQL Database -->
+            <g transform="translate(170, 710)">
+                <path d="M 0 30 Q 100 0 200 30 L 200 110 Q 100 140 0 110 Z" fill="#ffffff" stroke="#0369a1"
+                    stroke-width="2" filter="url(#drop-shadow)" />
+                <path d="M 0 30 Q 100 60 200 30" fill="none" stroke="#0369a1" stroke-width="2" />
+                <text x="100" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a">PostgreSQL
+                    DB</text>
+                <text x="100" y="85" text-anchor="middle" font-size="11" fill="#64748b">Hosted on Supabase</text>
+            </g>
+
+            <!-- Redis Cache -->
+            <g transform="translate(420, 710)">
+                <path d="M 0 25 Q 60 0 120 25 L 120 95 Q 60 120 0 95 Z" fill="#ffffff" stroke="#dc2626" stroke-width="2"
+                    filter="url(#drop-shadow)" />
+                <path d="M 0 25 Q 60 50 120 25" fill="none" stroke="#dc2626" stroke-width="2" />
+                <text x="60" y="60" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a">Redis
+                    Cache</text>
+                <text x="60" y="80" text-anchor="middle" font-size="11" fill="#64748b">Consent State / In-proc</text>
+            </g>
+
+            <!-- Vault Storage -->
+            <g transform="translate(600, 710)">
+                <path d="M 0 30 Q 110 0 220 30 L 220 110 Q 110 140 0 110 Z" fill="#ffffff" stroke="#16a34a"
+                    stroke-width="2" filter="url(#drop-shadow)" />
+                <path d="M 0 30 Q 110 60 220 30" fill="none" stroke="#16a34a" stroke-width="2" />
+                <text x="110" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#0f172a">Local Disk
+                    Storage</text>
+                <text x="110" y="85" text-anchor="middle" font-size="11" fill="#64748b">Encrypted Medical Vault</text>
+            </g>
+
+            <!-- Planned S3 Storage -->
+            <g transform="translate(850, 710)">
+                <path d="M 0 30 Q 80 0 160 30 L 160 110 Q 80 140 0 110 Z" fill="#f8fafc" stroke="#94a3b8"
+                    stroke-width="2" stroke-dasharray="6,4" />
+                <path d="M 0 30 Q 80 60 160 30" fill="none" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,4" />
+                <text x="80" y="65" text-anchor="middle" font-size="14" font-weight="bold" fill="#64748b">AWS S3</text>
+                <text x="80" y="85" text-anchor="middle" font-size="11" fill="#64748b">(Planned Extension)</text>
+            </g>
+
+            <!-- Audit Logs Box -->
+            <g transform="translate(100, 840)">
+                <rect width="340" height="30" rx="4" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5" />
+                <text x="170" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#991b1b">Hash-Chained
+                    Integrity Ledger & Immutable Audit Logs</text>
+            </g>
+
+            <!-- Master Key Label -->
+            <g transform="translate(581, 840)">
+                <rect width="280" height="30" rx="4" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5" />
+                <text x="140" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#166534">Local AES
+                    Master Key (KMS Planned)</text>
+            </g>
+
+            <!-- Legend -->
+            <g transform="translate(950, 320)">
+                <rect width="200" height="70" rx="4" fill="#ffffff" stroke="#cbd5e1" />
+                <text x="100" y="20" text-anchor="middle" font-size="12" font-weight="bold" fill="#334155">Legend</text>
+
+                <line x1="20" y1="35" x2="45" y2="35" stroke="#0369a1" stroke-width="2" />
+                <text x="55" y="39" font-size="11" fill="#475569">Deployed Data Flow</text>
+
+                <line x1="20" y1="55" x2="45" y2="55" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4" />
+                <text x="55" y="59" font-size="11" fill="#475569">Planned / Optional Flow</text>
+            </g>
+
+        </svg>
+    </div>
+</body>
+
+</html>

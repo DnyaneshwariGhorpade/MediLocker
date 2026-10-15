@@ -151,7 +151,7 @@ export async function hasActiveBreakGlass(patientId: string, doctorId: string): 
 export async function canAccessRecord(userId: string, role: string, recordId: string): Promise<boolean> {
     const record = await db.medical_records.findUnique({
         where: { record_id: recordId },
-        select: { patient_id: true, category: true, is_deleted: true },
+        select: { patient_id: true, category: true, is_deleted: true, uploaded_by_doctor_id: true },
     });
 
     if (!record || record.is_deleted) return false;
@@ -170,6 +170,9 @@ export async function canAccessRecord(userId: string, role: string, recordId: st
             select: { doctor_id: true },
         });
         if (!doctor) return false;
+
+        // The doctor who uploaded the record is authorized to access / anchor it
+        if (record.uploaded_by_doctor_id === doctor.doctor_id) return true;
 
         const consent = await resolveConsent(record.patient_id, doctor.doctor_id);
         if (consent.allowed.has(record.category)) return true;
