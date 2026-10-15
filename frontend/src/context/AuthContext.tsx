@@ -13,6 +13,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [role, setRole] = useState<string | null>(localStorage.getItem('role'));
 
+  React.useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token') {
+        setToken(e.newValue);
+      }
+      if (e.key === 'role') {
+        setRole(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const login = (newToken: string, newRole: string) => {
     setToken(newToken);
     setRole(newRole);

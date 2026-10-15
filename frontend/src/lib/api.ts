@@ -39,12 +39,16 @@ export class ApiError extends Error {
 
 type SessionExpiredHandler = () => void;
 
+let isExpiring = false;
 let onSessionExpired: SessionExpiredHandler = () => {
+    if (isExpiring) return;
+    isExpiring = true;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(ROLE_KEY);
     if (!window.location.pathname.startsWith('/login')) {
         window.location.href = '/login?expired=1';
     }
+    setTimeout(() => { isExpiring = false; }, 3000);
 };
 
 /** Lets the app route a session expiry through React rather than a hard reload. */

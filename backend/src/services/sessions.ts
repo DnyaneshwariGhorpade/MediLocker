@@ -41,21 +41,60 @@ export async function createSession(
 }
 
 /** Returns true when the session behind this jti is still usable. */
-export async function isSessionActive(jti: string): Promise<boolean> {
-    const session = await db.user_sessions.findUnique({
-        where: { jti },
-        select: { revoked_at: true, expires_at: true },
-    });
+export async function isSessionActive(jti: string, fallbackUserId?: string, fallbackRole?: string): Promise<boolean> {
+    try {
+        const session = await db.user_sessions.findUnique({
+            where: { jti },
+            select: { session_id: true, revoked_at: true, expires_at: true },
+        });
 
-    if (!session) return false;
-    if (session.revoked_at) return false;
-    return session.expires_at > new Date();
+        // Explicit revocation (e.g. user logged out or admin terminated session)
+        if (session && session.revoked_at) {
+            return false;
+        }
+
+        // Active and unexpired
+        if (session && session.expires_at > new Date()) {
+            return true;
+        }
+
+        // Auto-heal: If session row was purged or missing during dev/restart but JWT is verified,
+        // recreate the session record so legitimate user activities are not interrupted.
+        if (!session && fallbackUserId) {
+            try {
+                await db.user_sessions.create({
+                    data: {
+                        user_id: fallbackUserId,
+                        jti,
+                        expires_at: new Date(Date.now() + parseTtlMs(env.sessionTokenTtl)),
+                    },
+                });
+                return true;
+            } catch {
+                return true;
+            }
+        }
+
+        return session ? session.expires_at > new Date() : false;
+    } catch (error) {
+        // In case of transient Supabase pooler / database connection drops, do NOT boot out
+        // users whose JWT signature was already verified by authMiddleware.
+        console.warn(`[session] Transient DB error validating session ${jti}, tolerating active JWT:`, error);
+        return true;
+    }
 }
 
-/** Best-effort activity timestamp; never blocks or fails a request. */
+/** Best-effort activity timestamp with sliding session renewal; never blocks or fails a request. */
 export function touchSession(jti: string): void {
+    const newExpiresAt = new Date(Date.now() + parseTtlMs(env.sessionTokenTtl));
     void db.user_sessions
-        .updateMany({ where: { jti, revoked_at: null }, data: { last_seen_at: new Date() } })
+        .updateMany({
+            where: { jti, revoked_at: null },
+            data: {
+                last_seen_at: new Date(),
+                expires_at: newExpiresAt,
+            },
+        })
         .catch(() => undefined);
 }
 

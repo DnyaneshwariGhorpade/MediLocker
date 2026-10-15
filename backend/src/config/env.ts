@@ -81,7 +81,7 @@ export const env = {
     /** Lifetime of the short-lived token issued between password and MFA. */
     mfaTokenTtl: optional('MFA_TOKEN_TTL', '5m'),
     /** Lifetime of the session token issued after successful MFA. */
-    sessionTokenTtl: optional('SESSION_TOKEN_TTL', '2h'),
+    sessionTokenTtl: optional('SESSION_TOKEN_TTL', '7d'),
 
     bcryptRounds: integer('BCRYPT_ROUNDS', 10),
 
@@ -134,7 +134,7 @@ export const env = {
     publicVerifyUrl: optional('PUBLIC_VERIFY_URL', 'http://localhost:5173/verify'),
 
     /** Minutes a break-glass approval code stays valid. */
-    emergencyCodeMinutes: integer('EMERGENCY_CODE_MINUTES', 10),
+    emergencyCodeMinutes: integer('EMERGENCY_CODE_MINUTES', 30),
 
     /**
      * First log_id that belongs to the hash chain. Rows written before

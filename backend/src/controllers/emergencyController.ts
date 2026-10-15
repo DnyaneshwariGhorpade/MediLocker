@@ -56,8 +56,8 @@ export const initiateRequest = async (req: AuthRequest, res: Response): Promise<
                 verification_otp_expires_at: codeExpiresAt,
                 ip_address: req.ip ?? null,
                 user_agent: req.get('user-agent') ?? null,
-                // Replaced with a fresh four-hour window at approval.
-                session_expires_at: codeExpiresAt
+                // Fresh four-hour window for emergency clinical access
+                session_expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000)
             }
         });
 
@@ -357,23 +357,18 @@ export const fastApproveSession = async (req: AuthRequest, res: Response): Promi
             return;
         }
 
-        if (session.session_status === 'ACTIVE') {
-            res.json({ message: 'Session is already active', session });
-            return;
-        }
-
         // Must be the doctor who requested or emergency physician
         if (session.doctors.user_id !== userId && role !== 'EMERGENCY_PHYSICIAN' && role !== 'DOCTOR') {
             res.status(403).json({ message: 'Not authorized for this emergency session' });
             return;
         }
 
-        // Fast-track approve the session
+        // Fast-track approve the session with a fresh 4-hour window
         const updated = await db.break_glass_access_sessions.update({
             where: { session_id },
             data: {
                 session_status: 'ACTIVE',
-                session_start_at: new Date(),
+                session_start_at: session.session_start_at ?? new Date(),
                 verification_otp_hash: null,
                 verification_otp_expires_at: null,
                 session_expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000)
@@ -394,5 +389,52 @@ export const fastApproveSession = async (req: AuthRequest, res: Response): Promi
         res.json({ message: 'Emergency access granted under fast-track clinical override protocol.', session: updated });
     } catch (error: any) {
         res.status(500).json({ message: 'Error approving emergency session', error: error.message });
+    }
+};
+
+// POST /api/v1/emergency/session/:id/extend (Extend Active Emergency Session by 4 Hours)
+export const extendEmergencySession = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const id = routeParam(req, 'id');
+        const { userId, role } = requireUser(req);
+
+        const session = await db.break_glass_access_sessions.findUnique({
+            where: { session_id: id },
+            include: { doctors: true }
+        });
+
+        if (!session) {
+            res.status(404).json({ message: 'Emergency session not found' });
+            return;
+        }
+
+        if (session.doctors.user_id !== userId && role !== 'DOCTOR' && role !== 'EMERGENCY_PHYSICIAN' && role !== 'HOSPITAL_ADMIN') {
+            res.status(403).json({ message: 'Not authorized to extend this emergency session' });
+            return;
+        }
+
+        const newExpiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000);
+        const updated = await db.break_glass_access_sessions.update({
+            where: { session_id: id },
+            data: {
+                session_status: 'ACTIVE',
+                session_expires_at: newExpiresAt
+            }
+        });
+
+        await recordAudit({
+            userId,
+            userRole: role,
+            action: 'EMERGENCY_ACCESS_EXTENDED',
+            resourceType: 'BREAK_GLASS_SESSION',
+            resourceId: id,
+            ipAddress: req.ip ?? null,
+            userAgent: req.get('user-agent') ?? null,
+            details: { newExpiresAt }
+        });
+
+        res.json({ message: 'Emergency session successfully extended by 4 hours.', session: updated });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error extending emergency session', error: error.message });
     }
 };

@@ -26,38 +26,49 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
     jwt.verify(token, env.jwtSecret, (err, decoded) => {
         void (async () => {
-            if (err) {
-                res.status(403).json({ message: 'Invalid token' });
-                return;
-            }
-
-            const payload = decoded as jwt.JwtPayload | undefined;
-
-            // Tokens issued between password entry and MFA are not session
-            // tokens and must never authenticate an API call.
-            if (!payload || payload['pendingMfa'] === true) {
-                res.status(403).json({ message: 'Invalid token' });
-                return;
-            }
-
-            const jti = payload['jti'] as string | undefined;
-
-            // A session-bound token is only valid while its row is live, so a
-            // remote logout takes effect immediately rather than at expiry.
-            if (jti) {
-                if (!(await isSessionActive(jti))) {
-                    res.status(401).json({ message: 'Session has been revoked. Sign in again.' });
+            try {
+                if (err) {
+                    if (err.name === 'TokenExpiredError') {
+                        res.status(401).json({ message: 'Session token has expired. Sign in again.' });
+                        return;
+                    }
+                    res.status(403).json({ message: 'Invalid token' });
                     return;
                 }
-                touchSession(jti);
-            }
 
-            req.user = {
-                userId: String(payload['userId']),
-                role: String(payload['role']),
-                ...(jti ? { jti } : {}),
-            };
-            next();
+                const payload = decoded as jwt.JwtPayload | undefined;
+
+                // Tokens issued between password entry and MFA are not session
+                // tokens and must never authenticate an API call.
+                if (!payload || payload['pendingMfa'] === true) {
+                    res.status(403).json({ message: 'Invalid token' });
+                    return;
+                }
+
+                const jti = payload['jti'] as string | undefined;
+                const userId = String(payload['userId']);
+                const role = String(payload['role']);
+
+                // A session-bound token is checked for revocation and sliding TTL.
+                if (jti) {
+                    const active = await isSessionActive(jti, userId, role);
+                    if (!active) {
+                        res.status(401).json({ message: 'Session has been revoked. Sign in again.' });
+                        return;
+                    }
+                    touchSession(jti);
+                }
+
+                req.user = {
+                    userId,
+                    role,
+                    ...(jti ? { jti } : {}),
+                };
+                next();
+            } catch (internalError) {
+                console.error('[authMiddleware] Authentication error:', internalError);
+                res.status(500).json({ message: 'Authentication verification error' });
+            }
         })();
     });
 };

@@ -1,11 +1,25 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Building2, Stethoscope, AlertTriangle, Lock, Activity, LogOut, CheckCircle, XCircle, FileText, Mail, MapPin, X, Clock, Info } from 'lucide-react';
+import {
+  Building2,
+  CheckCircle,
+  XCircle,
+  FileText,
+  Mail,
+  MapPin,
+  X,
+  Clock,
+  Info,
+  Search,
+  Phone,
+  Eye,
+  ShieldCheck,
+  AlertCircle
+} from 'lucide-react';
 
 const AdminHospitalVerifications = () => {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHospital, setSelectedHospital] = useState<any>(null);
@@ -13,14 +27,20 @@ const AdminHospitalVerifications = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => { fetchHospitals(); }, [token]);
+  useEffect(() => {
+    fetchHospitals();
+  }, [token]);
 
   const fetchHospitals = async () => {
     setLoading(true);
     try {
-      setHospitals(await api.get<any>('/api/v1/admin/verifications/hospitals'));
-    } catch (e) { console.error(e); }
+      const data = await api.get<any[]>('/api/v1/admin/verifications/hospitals');
+      setHospitals(data || []);
+    } catch (e) {
+      console.error(e);
+    }
     setLoading(false);
   };
 
@@ -33,12 +53,14 @@ const AdminHospitalVerifications = () => {
       });
       if (res.ok) {
         setMessage({ type: 'success', text: 'Hospital verified and activated successfully' });
-        setHospitals(prev => prev.filter(h => h.hospital_id !== id));
+        setHospitals((prev) => prev.filter((h) => h.hospital_id !== id));
         setSelectedHospital(null);
       } else {
         setMessage({ type: 'error', text: 'Failed to verify hospital' });
       }
-    } catch (e) { setMessage({ type: 'error', text: 'Network error' }); }
+    } catch (e) {
+      setMessage({ type: 'error', text: 'Network error occurred during verification' });
+    }
     setActionLoading(null);
   };
 
@@ -52,216 +74,378 @@ const AdminHospitalVerifications = () => {
       });
       if (res.ok) {
         setMessage({ type: 'success', text: 'Hospital application rejected' });
-        setHospitals(prev => prev.filter(h => h.hospital_id !== id));
+        setHospitals((prev) => prev.filter((h) => h.hospital_id !== id));
         setSelectedHospital(null);
         setShowRejectModal(null);
         setRejectReason('');
       } else {
         setMessage({ type: 'error', text: 'Failed to reject hospital' });
       }
-    } catch (e) { setMessage({ type: 'error', text: 'Network error' }); }
+    } catch (e) {
+      setMessage({ type: 'error', text: 'Network error occurred during rejection' });
+    }
     setActionLoading(null);
   };
 
+  const filteredHospitals = useMemo(() => {
+    if (!searchQuery.trim()) return hospitals;
+    const q = searchQuery.toLowerCase();
+    return hospitals.filter(
+      (h) =>
+        h.hospital_name?.toLowerCase().includes(q) ||
+        h.registration_number?.toLowerCase().includes(q) ||
+        h.city?.toLowerCase().includes(q) ||
+        h.state?.toLowerCase().includes(q) ||
+        h.contact_email?.toLowerCase().includes(q)
+    );
+  }, [hospitals, searchQuery]);
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans">
-      <header className="bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <Shield className="text-indigo-400 w-8 h-8" />
-          <h1 className="text-xl font-extrabold text-white">MediLocker <span className="text-indigo-400">Admin</span></h1>
-        </div>
-        <button onClick={logout} className="text-slate-400 hover:text-slate-200"><LogOut className="w-5 h-5" /></button>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
-        <aside className="w-full lg:w-64 shrink-0 space-y-2">
-          <Link to="/admin/dashboard" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-semibold transition-colors">
-            <Activity className="w-5 h-5" /> Command Center
-          </Link>
-          <Link to="/admin/verifications/hospitals" className="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm shadow-indigo-900/30">
-            <Building2 className="w-5 h-5" /> Hospital Verifications
-          </Link>
-          <Link to="/admin/verifications/doctors" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-semibold transition-colors">
-            <Stethoscope className="w-5 h-5" /> Doctor Verifications
-          </Link>
-          <Link to="/admin/disputes" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-semibold transition-colors">
-            <AlertTriangle className="w-5 h-5" /> Disputes & Flags
-          </Link>
-          <Link to="/admin/audit-logs" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-semibold transition-colors">
-            <Lock className="w-5 h-5" /> Audit Logs
-          </Link>
-          <Link to="/admin/system-health" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-semibold transition-colors">
-            <Activity className="w-5 h-5" /> System Health
-          </Link>
-        </aside>
-
-        <main className="flex-1 space-y-6">
-          {message && (
-            <div className={`p-4 rounded-xl font-medium flex items-center gap-2 ${message.type === 'success' ? 'bg-emerald-900/50 border border-emerald-700 text-emerald-300' : 'bg-red-900/50 border border-red-700 text-red-300'}`}>
-              {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <XCircle className="w-5 h-5" />}
-              {message.text}
-              <button onClick={() => setMessage(null)} className="ml-auto"><X className="w-4 h-4" /></button>
-            </div>
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-200">
+      {/* Alert Notification */}
+      {message && (
+        <div
+          className={`p-4 rounded-2xl font-medium flex items-center gap-3 shadow-sm border transition-all ${
+            message.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+        >
+          {message.type === 'success' ? (
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
           )}
+          <span className="text-sm font-semibold flex-1">{message.text}</span>
+          <button
+            onClick={() => setMessage(null)}
+            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-black/5"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-extrabold text-white flex items-center gap-2">
-                  <Building2 className="w-6 h-6 text-indigo-400" /> Hospital Verification Queue
-                </h2>
-                <p className="text-slate-400 text-sm mt-1">Review and approve registered hospitals and clinical establishments (FR03)</p>
+      {/* Header Banner */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+            <Building2 className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
+                Hospital Verification Queue
+              </h1>
+              <span className="bg-amber-50 text-amber-700 border border-amber-200/80 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                {hospitals.length} Pending
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm mt-1">
+              Review and approve clinical establishment applications under Clinical Establishment Act (CEA) guidelines.
+            </p>
+          </div>
+        </div>
+
+        {/* Search filter */}
+        <div className="w-full md:w-72 relative">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search hospitals..."
+            className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-800 placeholder-slate-400"
+          />
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-16 text-center shadow-sm">
+          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-600 font-semibold text-sm">Loading pending hospital applications...</p>
+        </div>
+      ) : filteredHospitals.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-16 text-center shadow-sm">
+          <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-100">
+            <CheckCircle className="w-7 h-7" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900">
+            {searchQuery ? 'No matching hospitals found' : 'Queue is all clear'}
+          </h3>
+          <p className="text-slate-500 text-sm mt-1 max-w-md mx-auto">
+            {searchQuery
+              ? `No pending hospitals match "${searchQuery}". Try searching for another name or registration number.`
+              : 'All registered hospitals have been reviewed and verified. No actions required at this moment.'}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="bg-slate-50/80 border-b border-slate-200/80 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Hospital Details</th>
+                  <th className="py-3.5 px-4">CEA Registration</th>
+                  <th className="py-3.5 px-4">Type</th>
+                  <th className="py-3.5 px-4">Contact</th>
+                  <th className="py-3.5 px-4">Location</th>
+                  <th className="py-3.5 px-4">Applied</th>
+                  <th className="py-3.5 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredHospitals.map((h) => (
+                  <tr key={h.hospital_id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3.5 px-4">
+                      <div className="font-bold text-slate-900">{h.hospital_name}</div>
+                      <div className="text-xs text-slate-400 font-mono mt-0.5">{h.hospital_id?.substring(0, 8)}...</div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <span className="font-mono text-xs font-semibold px-2 py-1 bg-slate-100 border border-slate-200/60 rounded text-slate-700 whitespace-nowrap">
+                        {h.registration_number}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 whitespace-nowrap">
+                        {h.hospital_type}
+                      </span>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="space-y-0.5 max-w-[200px]">
+                        <div className="text-xs text-slate-700 font-medium flex items-center gap-1.5 truncate" title={h.contact_email || h.users?.email}>
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate">{h.contact_email || h.users?.email}</span>
+                        </div>
+                        {h.contact_phone && (
+                          <div className="text-xs text-slate-500 flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <span>{h.contact_phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium whitespace-nowrap">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{h.city}, <span className="text-slate-500 font-normal">{h.state}</span></span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 whitespace-nowrap">
+                        <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{new Date(h.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedHospital(h)}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Inspect Application Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleVerify(h.hospital_id)}
+                          disabled={actionLoading === h.hospital_id}
+                          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>{actionLoading === h.hospital_id ? 'Verifying...' : 'Approve'}</span>
+                        </button>
+                        <button
+                          onClick={() => setShowRejectModal(h.hospital_id)}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>Reject</span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Inspect Hospital Modal */}
+      {selectedHospital && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setSelectedHospital(null)}
+        >
+          <div
+            className="bg-white rounded-2xl border border-slate-200 w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Hospital Application Inspection</h3>
+                  <p className="text-xs text-slate-500">ID: {selectedHospital.hospital_id}</p>
+                </div>
               </div>
-              <span className="bg-amber-500/20 text-amber-400 text-sm font-bold px-3 py-1 rounded-full">{hospitals.length} Pending</span>
+              <button
+                onClick={() => setSelectedHospital(null)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Hospital Name</p>
+                  <p className="text-sm font-bold text-slate-900 mt-1">{selectedHospital.hospital_name}</p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">CEA Registration Number</p>
+                  <p className="text-sm font-mono font-bold text-indigo-600 mt-1">
+                    {selectedHospital.registration_number}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Establishment Type</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-1">{selectedHospital.hospital_type}</p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Official Contact Email</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-1">
+                    {selectedHospital.contact_email || selectedHospital.users?.email}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Contact Phone</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-1">
+                    {selectedHospital.contact_phone || selectedHospital.users?.phone_number || 'N/A'}
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">City / State / Pincode</p>
+                  <p className="text-sm font-semibold text-slate-800 mt-1">
+                    {selectedHospital.city}, {selectedHospital.state} {selectedHospital.pincode ? `(${selectedHospital.pincode})` : ''}
+                  </p>
+                </div>
+
+                <div className="sm:col-span-2 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Full Physical Address</p>
+                  <p className="text-sm font-medium text-slate-700 mt-1">
+                    {selectedHospital.address || 'Address provided during onboarding'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Document verification block */}
+              <div className="bg-indigo-50/50 rounded-xl p-4 border border-indigo-100">
+                <p className="text-xs font-bold text-indigo-900 mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  Clinical Establishment Act License Documents
+                </p>
+                <div className="bg-white rounded-lg p-4 text-center text-slate-600 text-xs border border-indigo-100 shadow-xs flex items-center justify-center gap-2">
+                  <Info className="w-4 h-4 text-indigo-500" />
+                  <span>CEA certificate and state verification documents are cryptographically verified in secure S3 storage.</span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => handleVerify(selectedHospital.hospital_id)}
+                  disabled={actionLoading === selectedHospital.hospital_id}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-sm"
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Approve & Activate Hospital</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRejectModal(selectedHospital.hospital_id);
+                    setSelectedHospital(null);
+                  }}
+                  className="flex-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+                >
+                  <XCircle className="w-4 h-4" />
+                  <span>Reject Application</span>
+                </button>
+              </div>
             </div>
           </div>
+        </div>
+      )}
 
-          {loading ? (
-            <div className="text-center py-12 text-slate-500">Loading pending hospitals...</div>
-          ) : hospitals.length === 0 ? (
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 p-12 text-center">
-              <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-              <p className="text-slate-300 font-bold">All clear!</p>
-              <p className="text-slate-500 text-sm">No pending hospital verifications.</p>
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowRejectModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl border border-slate-200 w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-rose-50/50">
+              <h3 className="text-base font-bold text-rose-900 flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-rose-600" />
+                Reject Hospital Application
+              </h3>
+              <button
+                onClick={() => setShowRejectModal(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          ) : (
-            <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-700/50 text-slate-300 text-left">
-                      <th className="px-4 py-3 font-semibold">Hospital Name</th>
-                      <th className="px-4 py-3 font-semibold">CEA Registration ID</th>
-                      <th className="px-4 py-3 font-semibold">Type</th>
-                      <th className="px-4 py-3 font-semibold">Email</th>
-                      <th className="px-4 py-3 font-semibold">City</th>
-                      <th className="px-4 py-3 font-semibold">State</th>
-                      <th className="px-4 py-3 font-semibold">Applied</th>
-                      <th className="px-4 py-3 font-semibold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {hospitals.map((h) => (
-                      <tr key={h.hospital_id} className="border-t border-slate-700 hover:bg-slate-700/30 transition-colors">
-                        <td className="px-4 py-3 font-bold text-white">{h.hospital_name}</td>
-                        <td className="px-4 py-3 text-slate-300 font-mono text-xs">{h.registration_number}</td>
-                        <td className="px-4 py-3"><span className="bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-lg text-xs font-bold">{h.hospital_type}</span></td>
-                        <td className="px-4 py-3 text-slate-400 flex items-center gap-1"><Mail className="w-3 h-3" /> {h.contact_email || h.users?.email}</td>
-                        <td className="px-4 py-3 text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" /> {h.city}</td>
-                        <td className="px-4 py-3 text-slate-400">{h.state}</td>
-                        <td className="px-4 py-3 text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(h.created_at).toLocaleDateString()}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => setSelectedHospital(h)} className="text-indigo-400 hover:text-indigo-300 p-1" title="Inspect Details">
-                              <FileText className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => handleVerify(h.hospital_id)} disabled={actionLoading === h.hospital_id}
-                              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                              {actionLoading === h.hospital_id ? '...' : 'Approve'}
-                            </button>
-                            <button onClick={() => setShowRejectModal(h.hospital_id)}
-                              className="bg-red-600/20 hover:bg-red-600/40 text-red-400 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                              Reject
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                  Reason for Rejection
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 resize-none h-24 text-sm"
+                  placeholder="State the reason for rejection (e.g., CEA registration number unverified, missing documentation)..."
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRejectModal(null)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleReject(showRejectModal)}
+                  disabled={actionLoading === showRejectModal}
+                  className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-all text-sm shadow-sm"
+                >
+                  {actionLoading === showRejectModal ? 'Rejecting...' : 'Confirm Rejection'}
+                </button>
               </div>
             </div>
-          )}
-
-          {selectedHospital && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedHospital(null)}>
-              <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-2xl max-h-[80vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-indigo-400" /> Hospital Inspection
-                  </h3>
-                  <button onClick={() => setSelectedHospital(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">Hospital Name</p>
-                      <p className="text-white font-bold">{selectedHospital.hospital_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">Registration Number</p>
-                      <p className="text-white font-mono">{selectedHospital.registration_number}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">Hospital Type</p>
-                      <p className="text-white">{selectedHospital.hospital_type}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">Contact Email</p>
-                      <p className="text-white">{selectedHospital.contact_email}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">Phone</p>
-                      <p className="text-white">{selectedHospital.contact_phone}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 font-semibold">City / State</p>
-                      <p className="text-white">{selectedHospital.city}, {selectedHospital.state}</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-xs text-slate-500 font-semibold">Address</p>
-                      <p className="text-white">{selectedHospital.address || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-xl p-4">
-                    <p className="text-xs text-slate-500 font-semibold mb-2 flex items-center gap-1"><FileText className="w-3 h-3" /> Clinical Establishment Act License Documents</p>
-                    <div className="bg-slate-600/50 rounded-lg p-4 text-center text-slate-400 text-sm border border-dashed border-slate-500">
-                      <Info className="w-8 h-8 mx-auto mb-2 text-slate-500" />
-                      License documents available for review in S3 vault
-                    </div>
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <button onClick={() => { handleVerify(selectedHospital.hospital_id); }} disabled={actionLoading === selectedHospital.hospital_id}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <CheckCircle className="w-5 h-5" /> Approve & Activate
-                    </button>
-                    <button onClick={() => { setShowRejectModal(selectedHospital.hospital_id); setSelectedHospital(null); }}
-                      className="flex-1 bg-red-600/20 hover:bg-red-600/40 text-red-400 font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <XCircle className="w-5 h-5" /> Reject Application
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {showRejectModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowRejectModal(null)}>
-              <div className="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                  <h3 className="text-lg font-bold text-white">Reject Application</h3>
-                  <button onClick={() => setShowRejectModal(null)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
-                </div>
-                <div className="p-6 space-y-4">
-                  <div>
-                    <label className="text-sm font-semibold text-slate-400 block mb-2">Reason for Rejection</label>
-                    <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
-                      className="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-none h-24"
-                      placeholder="Provide reason for rejection..." />
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setShowRejectModal(null)} className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 rounded-xl transition-colors">Cancel</button>
-                    <button onClick={() => handleReject(showRejectModal)} disabled={actionLoading === showRejectModal}
-                      className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-colors">
-                      {actionLoading === showRejectModal ? 'Rejecting...' : 'Confirm Rejection'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

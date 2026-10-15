@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { Shield, ArrowRight, Lock, CheckCircle2 } from 'lucide-react';
+import { Shield, ArrowRight, Lock, CheckCircle2, Clock } from 'lucide-react';
 
 const Login = () => {
   const [loginId, setLoginId] = useState('');
@@ -17,6 +17,8 @@ const Login = () => {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === '1';
   const { login } = useAuth();
 
   useEffect(() => {
@@ -121,6 +123,13 @@ const Login = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
+          {sessionExpired && !error && (
+            <div className="bg-amber-50 text-amber-800 p-4 rounded-xl mb-6 text-sm font-semibold border border-amber-200 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Your previous session has ended. Please sign in to resume.</span>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-100 flex items-center gap-2">
               <Lock className="w-4 h-4" />

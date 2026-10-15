@@ -4,6 +4,7 @@ import {
     getPendingRequests,
     approveRequest,
     fastApproveSession,
+    extendEmergencySession,
     terminateSession,
     getSessionData
 } from '../controllers/emergencyController';
@@ -52,6 +53,12 @@ router.get(
     authorizeRoles('DOCTOR', 'EMERGENCY_PHYSICIAN'),
     validate({ params: idParam }),
     asyncHandler(getSessionData)
+);
+router.post(
+    '/session/:id/extend',
+    authorizeRoles('DOCTOR', 'EMERGENCY_PHYSICIAN', 'HOSPITAL_ADMIN'),
+    validate({ params: idParam }),
+    asyncHandler(extendEmergencySession)
 );
 
 export default router;
