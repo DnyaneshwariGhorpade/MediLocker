@@ -8,7 +8,8 @@ import {
     getProfile,
     updateProfile,
     updateEmergencySettings,
-    getVerifiedDoctors
+    getVerifiedDoctors,
+    seedSampleVitals
 } from '../controllers/patientController';
 import { authenticateToken, authorizeRoles } from '../middlewares/authMiddleware';
 import { validate } from '../middlewares/validate';
@@ -24,6 +25,7 @@ router.get('/dashboard-summary', asyncHandler(getDashboardSummary));
 router.get('/vitals/trends', asyncHandler(getVitalsTrends));
 router.get('/vitals', asyncHandler(getVitals));
 router.post('/vitals', validate({ body: addVitalSchema }), asyncHandler(addVital));
+router.post('/vitals/sample', asyncHandler(seedSampleVitals));
 router.get('/consultations', asyncHandler(getConsultations));
 router.get('/profile', asyncHandler(getProfile));
 router.put('/profile', validate({ body: updateProfileSchema }), asyncHandler(updateProfile));

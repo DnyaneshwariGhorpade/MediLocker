@@ -340,3 +340,59 @@ export const getSessionData = async (req: AuthRequest, res: Response): Promise<v
         res.status(500).json({ message: 'Error fetching session data', error: error.message });
     }
 };
+
+// POST /api/v1/emergency/fast-approve (Immediate Clinical Override)
+export const fastApproveSession = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { session_id } = req.body;
+        const { userId, role } = requireUser(req);
+
+        const session = await db.break_glass_access_sessions.findUnique({
+            where: { session_id },
+            include: { doctors: true, patients: true }
+        });
+
+        if (!session) {
+            res.status(404).json({ message: 'Emergency session not found' });
+            return;
+        }
+
+        if (session.session_status === 'ACTIVE') {
+            res.json({ message: 'Session is already active', session });
+            return;
+        }
+
+        // Must be the doctor who requested or emergency physician
+        if (session.doctors.user_id !== userId && role !== 'EMERGENCY_PHYSICIAN' && role !== 'DOCTOR') {
+            res.status(403).json({ message: 'Not authorized for this emergency session' });
+            return;
+        }
+
+        // Fast-track approve the session
+        const updated = await db.break_glass_access_sessions.update({
+            where: { session_id },
+            data: {
+                session_status: 'ACTIVE',
+                session_start_at: new Date(),
+                verification_otp_hash: null,
+                verification_otp_expires_at: null,
+                session_expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000)
+            }
+        });
+
+        await recordAudit({
+            userId,
+            userRole: role,
+            action: 'EMERGENCY_ACCESS_APPROVED',
+            resourceType: 'BREAK_GLASS_SESSION',
+            resourceId: session_id,
+            ipAddress: req.ip ?? null,
+            userAgent: req.get('user-agent') ?? null,
+            details: { override_mode: 'FAST_TRACK_CLINICAL_OVERRIDE' }
+        });
+
+        res.json({ message: 'Emergency access granted under fast-track clinical override protocol.', session: updated });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Error approving emergency session', error: error.message });
+    }
+};

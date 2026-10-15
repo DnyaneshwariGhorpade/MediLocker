@@ -103,7 +103,9 @@ function App() {
         <Route path="/doctor/patients" element={<DoctorPatients />} />
         <Route path="/doctor/upload" element={<DoctorUpload />} />
         <Route path="/doctor/prescriptions/new" element={<DoctorPrescriptions />} />
+        <Route path="/doctor/prescriptions" element={<DoctorPrescriptions />} />
         <Route path="/doctor/consultation/log" element={<DoctorConsultations />} />
+        <Route path="/doctor/consultations" element={<DoctorConsultations />} />
         <Route path="/doctor/search" element={<DoctorSearch />} />
         <Route path="/doctor/flag" element={<DoctorFlags />} />
       </Route>

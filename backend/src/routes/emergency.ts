@@ -3,6 +3,7 @@ import {
     initiateRequest,
     getPendingRequests,
     approveRequest,
+    fastApproveSession,
     terminateSession,
     getSessionData
 } from '../controllers/emergencyController';
@@ -27,6 +28,11 @@ router.post(
     authorizeRoles('DOCTOR', 'EMERGENCY_PHYSICIAN'),
     validate({ body: initiateEmergencySchema }),
     asyncHandler(initiateRequest)
+);
+router.post(
+    '/fast-approve',
+    authorizeRoles('DOCTOR', 'EMERGENCY_PHYSICIAN'),
+    asyncHandler(fastApproveSession)
 );
 router.get('/pending-requests', authorizeRoles('HOSPITAL_ADMIN'), asyncHandler(getPendingRequests));
 router.post(

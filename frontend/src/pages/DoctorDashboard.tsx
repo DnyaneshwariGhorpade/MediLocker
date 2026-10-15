@@ -3,12 +3,11 @@ import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  Stethoscope, Users, UploadCloud, ShieldCheck,
-  AlertTriangle, Search, Calendar, FileSignature, LogOut
+  Users, ShieldCheck, Search, Calendar, FileSignature, UploadCloud, AlertTriangle
 } from 'lucide-react';
 
 const DoctorDashboard = () => {
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const [data, setData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -25,56 +24,9 @@ const DoctorDashboard = () => {
   if (!data) return <div className="p-8 text-center text-slate-500 font-medium">Loading clinical workspace...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Stethoscope className="text-indigo-600 w-8 h-8" />
-          <h1 className="text-xl font-extrabold text-slate-800">MediLocker <span className="text-indigo-600">Clinical</span></h1>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-bold">
-              {data.doctor.name.charAt(4)}
-            </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-bold text-slate-800">{data.doctor.name}</p>
-              <p className="text-xs font-medium text-slate-500">{data.doctor.specialization}</p>
-            </div>
-          </div>
-          <button onClick={logout} className="text-slate-400 hover:text-slate-600"><LogOut className="w-5 h-5" /></button>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
-
-        {/* Sidebar Navigation */}
-        <aside className="w-full lg:w-64 shrink-0 space-y-2">
-          <Link to="/doctor/dashboard" className="flex items-center gap-3 px-4 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm shadow-indigo-200">
-            <Stethoscope className="w-5 h-5" /> Workspace
-          </Link>
-          <Link to="/doctor/patients" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <Users className="w-5 h-5" /> Patient Lookup
-          </Link>
-          <Link to="/doctor/upload" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <UploadCloud className="w-5 h-5" /> Upload Records
-          </Link>
-          <Link to="/doctor/prescriptions/new" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <FileSignature className="w-5 h-5" /> Digital Rx Studio
-          </Link>
-          <Link to="/doctor/consultation/log" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <Calendar className="w-5 h-5" /> Encounter Log
-          </Link>
-          <Link to="/doctor/search" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <Search className="w-5 h-5" /> Smart Search
-          </Link>
-          <Link to="/doctor/flag" className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-white hover:text-slate-900 rounded-xl font-semibold transition-colors">
-            <AlertTriangle className="w-5 h-5" /> Quality Disputes
-          </Link>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 space-y-8">
+    <div className="p-6 md:p-12 font-sans space-y-8">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto space-y-8">
 
           {/* Top Search Banner */}
           <section className="bg-indigo-900 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg relative overflow-hidden">
@@ -169,7 +121,6 @@ const DoctorDashboard = () => {
 
         </main>
       </div>
-    </div>
   );
 };
 

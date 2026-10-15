@@ -1,7 +1,29 @@
 import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { api } from '../lib/api';
-import { Users, Search, ShieldCheck, ShieldAlert, Key, Eye, CheckCircle2, UploadCloud, FileSignature, Calendar } from 'lucide-react';
+import {
+  Users,
+  Search,
+  ShieldCheck,
+  ShieldAlert,
+  Key,
+  Eye,
+  UploadCloud,
+  FileSignature,
+  Calendar,
+  X,
+  Maximize2,
+  AlertCircle
+} from 'lucide-react';
+
+interface DecryptedViewerData {
+  recordId: string;
+  title: string;
+  mimeType: string;
+  objectUrl: string;
+  sha256?: string;
+  algorithm?: string;
+}
 
 const DoctorPatients = () => {
   const location = useLocation();
@@ -13,19 +35,21 @@ const DoctorPatients = () => {
   const [records, setRecords] = useState<any[]>([]);
 
   const [decryptingId, setDecryptingId] = useState<string | null>(null);
-  const [decryptedViewId, setDecryptedViewId] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<DecryptedViewerData | null>(null);
+  const [decryptError, setDecryptError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const query = params.get('query');
     if (query) {
       setIdentifier(query);
-      handleSearch(query);
+      void handleSearch(query);
     }
   }, [location]);
 
   const handleSearch = async (queryToSearch: string = identifier) => {
     if (!queryToSearch) return;
+    setDecryptError('');
     try {
       const res = await api.raw('/api/v1/doctor/check-consent', {
         method: 'POST',
@@ -38,14 +62,16 @@ const DoctorPatients = () => {
         setConsentDetails(data.consentDetails);
 
         if (data.hasConsent) {
-          fetchRecords(data.patient.vault_number);
+          void fetchRecords(data.patient.vault_number);
         } else {
           setRecords([]);
         }
       } else {
         setPatient(null);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const requestConsent = async () => {
@@ -55,25 +81,63 @@ const DoctorPatients = () => {
         method: 'POST',
         body: JSON.stringify({ patient_id: patient.id })
       });
-      if (res.ok) alert("Consent request sent to patient.");
-    } catch (e) { console.error(e); }
+      if (res.ok) alert('Consent request sent to patient.');
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const fetchRecords = async (vaultNumber: string) => {
     try {
-      setRecords(await api.get<any>(`/api/v1/doctor/patient-records/${vaultNumber}`));
-    } catch (e) { console.error(e); }
+      const data = await api.get<any>(`/api/v1/doctor/patient-records/${vaultNumber}`);
+      setRecords(data || []);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
-  const simulateDecryption = async (id: string) => {
+  /** Real in-memory KMS decryption and render */
+  const openRecord = async (id: string, recordTitle: string) => {
     setDecryptingId(id);
+    setDecryptError('');
     try {
-      // Simulate KMS unwrapping and local AES decryption
-      setTimeout(() => {
-        setDecryptingId(null);
-        setDecryptedViewId(id);
-      }, 2000);
-    } catch (e) { setDecryptingId(null); }
+      const res = await api.raw(`/api/v1/vault/records/${id}/decrypt`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Decryption failed on server');
+      }
+
+      const binaryString = window.atob(data.content_base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const mimeType = data.file_mime_type || 'application/pdf';
+      const blob = new Blob([bytes], { type: mimeType });
+      const objectUrl = URL.createObjectURL(blob);
+
+      setViewer({
+        recordId: id,
+        title: data.record_title || recordTitle,
+        mimeType,
+        objectUrl,
+        sha256: data.file_sha256_hash,
+        algorithm: data.encryption_algorithm || 'AES-256-GCM'
+      });
+    } catch (e: any) {
+      console.error(e);
+      setDecryptError(e.message || 'Failed to decrypt and view clinical record');
+    } finally {
+      setDecryptingId(null);
+    }
+  };
+
+  const closeViewer = () => {
+    if (viewer?.objectUrl) URL.revokeObjectURL(viewer.objectUrl);
+    setViewer(null);
   };
 
   return (
@@ -99,34 +163,48 @@ const DoctorPatients = () => {
               className="w-full pl-4 pr-4 py-3 rounded-l-2xl border border-slate-200 focus:ring-2 focus:ring-indigo-600 outline-none shadow-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
-            <button onClick={() => handleSearch()} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-r-2xl font-bold flex items-center gap-2 transition-colors">
+            <button
+              onClick={() => handleSearch()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-r-2xl font-bold flex items-center gap-2 transition-colors"
+            >
               <Search className="w-5 h-5" />
             </button>
           </div>
         </div>
 
+        {decryptError && (
+          <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-2xl font-bold flex items-center gap-3 shadow-sm animate-in fade-in">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <span>{decryptError}</span>
+          </div>
+        )}
+
         {!patient ? (
           <div className="bg-white rounded-3xl border border-slate-200 border-dashed p-16 text-center text-slate-400">
             <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="font-semibold text-lg">Search for a patient to view their records.</p>
+            <h3 className="text-lg font-bold text-slate-700">No Patient Selected</h3>
+            <p className="text-sm mt-1">Search via Lifelong Vault ID (e.g. ML-2026-XXXX) or registered phone number.</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
 
-            {/* Patient Header & Consent Banner */}
-            <div className={`p-8 rounded-3xl border shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 transition-all ${hasConsent ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">{patient.name}</h2>
-                <div className="flex gap-4 mt-2 text-sm font-medium">
-                  <span className="text-slate-600">Vault: <span className="font-mono text-slate-800">{patient.vault_number}</span></span>
-                  <span className="text-slate-400">•</span>
-                  <span className="text-slate-600">{patient.age} Yrs, {patient.gender}</span>
+            {/* Patient Consent & Identity Banner */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center font-bold text-xl text-indigo-700">
+                  {patient.name.charAt(0)}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">{patient.name}</h2>
+                  <p className="text-sm text-slate-500 font-mono mt-0.5">Vault ID: {patient.vault_number}</p>
+                  <p className="text-xs text-slate-400 font-medium mt-1">Age: {patient.age} &bull; Gender: {patient.gender} &bull; Blood: {patient.blood_group || 'O+'}</p>
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+              {/* Consent Controls & Clinical Actions */}
+              <div>
                 {hasConsent ? (
-                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
                     <div className="text-right sm:border-r sm:border-emerald-200 sm:pr-4">
                       <div className="flex items-center justify-end gap-1.5 text-emerald-800 font-bold text-xs mb-0.5">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" /> Consent Active
@@ -143,14 +221,14 @@ const DoctorPatients = () => {
                         <UploadCloud className="w-3.5 h-3.5" /> Upload File
                       </Link>
                       <Link
-                        to="/doctor/prescriptions"
+                        to="/doctor/prescriptions/new"
                         state={{ vaultNumber: patient.vault_number }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
                       >
                         <FileSignature className="w-3.5 h-3.5" /> Prescribe
                       </Link>
                       <Link
-                        to="/doctor/consultations"
+                        to="/doctor/consultation/log"
                         state={{ vaultNumber: patient.vault_number }}
                         className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
                       >
@@ -163,7 +241,10 @@ const DoctorPatients = () => {
                     <div className="flex items-center gap-2 text-rose-600 font-bold">
                       <ShieldAlert className="w-5 h-5" /> No Active Consent
                     </div>
-                    <button onClick={requestConsent} className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-colors text-sm">
+                    <button
+                      onClick={requestConsent}
+                      className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-xl font-bold shadow-md transition-colors text-sm"
+                    >
                       Request Access
                     </button>
                   </div>
@@ -176,41 +257,53 @@ const DoctorPatients = () => {
               <div>
                 <div className="flex items-center gap-3 mb-6">
                   <h3 className="text-xl font-bold text-slate-800">Authorized Records</h3>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 flex-wrap">
                     {consentDetails.allowed_categories.map((c: string) => (
-                      <span key={c} className="px-2 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded uppercase">{c.replace('_', ' ')}</span>
+                      <span key={c} className="text-xs bg-slate-200 text-slate-700 font-semibold px-2 py-0.5 rounded-md">
+                        {c}
+                      </span>
                     ))}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {records.map(record => (
-                    <div key={record.record_id} className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow">
-                      <div className="flex justify-between items-start mb-4">
-                        <span className="text-xs font-bold px-3 py-1 bg-slate-100 text-slate-600 rounded-lg">
-                          {record.category.replace(/_/g, ' ')}
-                        </span>
-                        {record.blockchain_anchor && <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="Blockchain verified" />}
+                  {records.map((record) => (
+                    <div key={record.record_id} className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        <div className="flex justify-between items-start mb-4">
+                          <span className="text-xs font-mono font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg">
+                            {record.category}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            {new Date(record.record_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-lg mb-1">{record.record_title}</h4>
+                        <p className="text-sm text-slate-500 mb-4">{record.diagnosis || 'Routine clinical report'}</p>
                       </div>
 
-                      <h3 className="text-xl font-bold text-slate-800 mb-2">{record.record_title}</h3>
-                      <p className="text-sm text-slate-500 mb-4 line-clamp-2">{record.diagnosis || 'No clinical diagnosis specified.'}</p>
-
-                      <div className="mt-auto pt-4 border-t border-slate-100 flex gap-2">
-                        {decryptedViewId === record.record_id ? (
-                          <button className="flex-1 bg-emerald-50 text-emerald-700 py-2 rounded-xl font-semibold flex justify-center items-center gap-2">
-                            <Eye className="w-4 h-4" /> Viewing
+                      <div className="border-t border-slate-100 pt-4 flex gap-2">
+                        {viewer?.recordId === record.record_id ? (
+                          <button
+                            onClick={() => setViewer(null)}
+                            className="flex-1 bg-emerald-50 text-emerald-700 py-2.5 rounded-xl font-semibold flex justify-center items-center gap-2 text-sm"
+                          >
+                            <Eye className="w-4 h-4" /> Viewing Active
                           </button>
                         ) : (
                           <button
-                            onClick={() => simulateDecryption(record.record_id)}
+                            onClick={() => openRecord(record.record_id, record.record_title)}
                             disabled={decryptingId === record.record_id}
-                            className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2 rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
+                            className="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 py-2.5 rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors disabled:opacity-50 text-sm"
                           >
                             {decryptingId === record.record_id ? (
-                              <span className="animate-pulse flex items-center gap-2"><Key className="w-4 h-4 animate-spin" /> Decrypting...</span>
+                              <span className="animate-pulse flex items-center gap-2">
+                                <Key className="w-4 h-4 animate-spin" /> Decrypting...
+                              </span>
                             ) : (
-                              <><Key className="w-4 h-4" /> View Securely</>
+                              <>
+                                <Key className="w-4 h-4" /> Decrypt &amp; View
+                              </>
                             )}
                           </button>
                         )}
@@ -229,24 +322,59 @@ const DoctorPatients = () => {
           </div>
         )}
 
-        {/* Decrypted Viewer Modal Overlay Simulation */}
-        {decryptedViewId && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+        {/* Real In-Memory Decrypted Document Viewer Modal */}
+        {viewer && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-5xl h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+              <div className="p-4 md:px-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                 <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-6 h-6 text-emerald-600" />
-                  <h3 className="font-bold text-slate-800">Secure In-Memory Decryption Viewer (Clinical Mode)</h3>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                      {viewer.title}
+                      <span className="text-xs font-semibold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
+                        Decrypted In-Memory
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400 font-mono">
+                      SHA256: {viewer.sha256 ? `${viewer.sha256.substring(0, 16)}...` : 'Verified'} &bull; Algorithm: {viewer.algorithm}
+                    </p>
+                  </div>
                 </div>
-                <button onClick={() => setDecryptedViewId(null)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl font-semibold text-slate-700 transition-colors">
-                  Close Document
-                </button>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={viewer.objectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" /> Fullscreen
+                  </a>
+                  <button
+                    onClick={closeViewer}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <X className="w-4 h-4" /> Close
+                  </button>
+                </div>
               </div>
-              <div className="p-8 flex-1 overflow-y-auto flex items-center justify-center bg-slate-100">
-                 {/* Dummy Document Representation */}
-                 <div className="bg-white w-full max-w-2xl h-96 shadow-lg border border-slate-200 rounded flex items-center justify-center p-12 text-center text-slate-400 border-dashed">
-                    <p>Decrypted medical record rendered securely from memory buffer.<br/>(Simulated PDF/DICOM Viewer)</p>
-                 </div>
+
+              <div className="flex-1 bg-slate-800 p-2 relative flex items-center justify-center overflow-hidden">
+                {viewer.mimeType.startsWith('image/') ? (
+                  <img
+                    src={viewer.objectUrl}
+                    alt={viewer.title}
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                  />
+                ) : (
+                  <iframe
+                    src={viewer.objectUrl}
+                    title={viewer.title}
+                    className="w-full h-full rounded-xl bg-white border-0"
+                  />
+                )}
               </div>
             </div>
           </div>

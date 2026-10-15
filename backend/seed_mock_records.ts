@@ -33,17 +33,45 @@ async function seedRecords() {
 
         if (!patient.patient_vaults) continue;
 
-        // Vitals
-        await db.patient_vitals.create({
-            data: {
-                patient_id: patient.patient_id,
-                recorded_by_user_id: doctor.user_id,
-                metric_type: 'BLOOD_PRESSURE',
-                metric_value: 120.5,
-                metric_unit: 'mmHg',
-                reading_context: 'Routine Checkup'
-            }
-        });
+        // Vitals - Multi-metric timeline
+        const vitalsToSeed = [
+            { metric_type: 'BP_SYSTOLIC', metric_value: 120 + (i % 6) * 2, metric_unit: 'mmHg', reading_context: 'Morning Baseline', daysAgo: 5 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 80 + (i % 4), metric_unit: 'mmHg', reading_context: 'Morning Baseline', daysAgo: 5 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 92 + (i % 8), metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 5 },
+            { metric_type: 'PULSE', metric_value: 70 + (i % 10), metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 5 },
+            { metric_type: 'SPO2', metric_value: 98 + (i % 2), metric_unit: '%', reading_context: 'Resting', daysAgo: 5 },
+            { metric_type: 'TEMPERATURE', metric_value: 98.4, metric_unit: '°F', reading_context: 'Routine', daysAgo: 5 },
+
+            { metric_type: 'BP_SYSTOLIC', metric_value: 118 + (i % 5) * 2, metric_unit: 'mmHg', reading_context: 'Routine Checkup', daysAgo: 2 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 78 + (i % 3), metric_unit: 'mmHg', reading_context: 'Routine Checkup', daysAgo: 2 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 90 + (i % 5), metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 2 },
+            { metric_type: 'PULSE', metric_value: 72 + (i % 6), metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 2 },
+            { metric_type: 'SPO2', metric_value: 99, metric_unit: '%', reading_context: 'Resting', daysAgo: 2 },
+
+            { metric_type: 'BP_SYSTOLIC', metric_value: 122 + (i % 4), metric_unit: 'mmHg', reading_context: 'Routine Checkup', daysAgo: 0 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 80 + (i % 2), metric_unit: 'mmHg', reading_context: 'Routine Checkup', daysAgo: 0 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 89 + (i % 4), metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 0 },
+            { metric_type: 'PULSE', metric_value: 71 + (i % 5), metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 0 },
+            { metric_type: 'SPO2', metric_value: 99, metric_unit: '%', reading_context: 'Resting', daysAgo: 0 },
+            { metric_type: 'WEIGHT', metric_value: 68.0 + (i % 5), metric_unit: 'kg', reading_context: 'Routine', daysAgo: 0 },
+            { metric_type: 'TEMPERATURE', metric_value: 98.6, metric_unit: '°F', reading_context: 'Resting', daysAgo: 0 },
+        ];
+
+        for (const v of vitalsToSeed) {
+            const recordedAt = new Date();
+            recordedAt.setDate(recordedAt.getDate() - v.daysAgo);
+            await db.patient_vitals.create({
+                data: {
+                    patient_id: patient.patient_id,
+                    recorded_by_user_id: doctor.user_id,
+                    metric_type: v.metric_type,
+                    metric_value: v.metric_value,
+                    metric_unit: v.metric_unit,
+                    reading_context: v.reading_context,
+                    recorded_at: recordedAt
+                }
+            });
+        }
 
         // Consultation
         await db.consultations.create({

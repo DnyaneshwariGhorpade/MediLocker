@@ -249,6 +249,45 @@ export async function seedDatabase(): Promise<DemoCredential[]> {
                 encryption_salt: `SALT-${i}`
             }
         });
+
+        // Seed initial telemetry for each patient
+        const seedVitals = [
+            { metric_type: 'BP_SYSTOLIC', metric_value: 122 + (i % 4), metric_unit: 'mmHg', reading_context: 'Morning Baseline', daysAgo: 6 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 81 + (i % 3), metric_unit: 'mmHg', reading_context: 'Morning Baseline', daysAgo: 6 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 94 + (i % 5), metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 6 },
+            { metric_type: 'PULSE', metric_value: 72 + (i % 4), metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 6 },
+            { metric_type: 'SPO2', metric_value: 98, metric_unit: '%', reading_context: 'Resting', daysAgo: 6 },
+            { metric_type: 'TEMPERATURE', metric_value: 98.4, metric_unit: '°F', reading_context: 'Resting', daysAgo: 6 },
+
+            { metric_type: 'BP_SYSTOLIC', metric_value: 119 + (i % 3), metric_unit: 'mmHg', reading_context: 'Routine Check', daysAgo: 3 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 79 + (i % 2), metric_unit: 'mmHg', reading_context: 'Routine Check', daysAgo: 3 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 91 + (i % 4), metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 3 },
+            { metric_type: 'PULSE', metric_value: 70 + (i % 3), metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 3 },
+            { metric_type: 'SPO2', metric_value: 99, metric_unit: '%', reading_context: 'Resting', daysAgo: 3 },
+
+            { metric_type: 'BP_SYSTOLIC', metric_value: 120, metric_unit: 'mmHg', reading_context: 'Resting Baseline', daysAgo: 0 },
+            { metric_type: 'BP_DIASTOLIC', metric_value: 80, metric_unit: 'mmHg', reading_context: 'Resting Baseline', daysAgo: 0 },
+            { metric_type: 'FASTING_SUGAR', metric_value: 89, metric_unit: 'mg/dL', reading_context: 'Fasting', daysAgo: 0 },
+            { metric_type: 'PULSE', metric_value: 71, metric_unit: 'bpm', reading_context: 'Resting', daysAgo: 0 },
+            { metric_type: 'SPO2', metric_value: 99, metric_unit: '%', reading_context: 'Resting', daysAgo: 0 },
+            { metric_type: 'WEIGHT', metric_value: 68.5, metric_unit: 'kg', reading_context: 'Morning Weigh-in', daysAgo: 0 },
+            { metric_type: 'TEMPERATURE', metric_value: 98.6, metric_unit: '°F', reading_context: 'Resting', daysAgo: 0 },
+        ];
+        for (const sv of seedVitals) {
+            const recordedAt = new Date();
+            recordedAt.setDate(recordedAt.getDate() - sv.daysAgo);
+            await db.patient_vitals.create({
+                data: {
+                    patient_id: patient.patient_id,
+                    recorded_by_user_id: user.user_id,
+                    metric_type: sv.metric_type,
+                    metric_value: sv.metric_value,
+                    metric_unit: sv.metric_unit,
+                    reading_context: sv.reading_context,
+                    recorded_at: recordedAt
+                }
+            });
+        }
     }
 
     // 4. Create Platform Admin

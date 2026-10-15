@@ -2,8 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { canonicalisePrescription, hasSigningKey, signPayload } from '../lib/crypto';
-import { FileSignature, Plus, Trash2, ShieldCheck, AlertCircle, Fingerprint, Search } from 'lucide-react';
+import { canonicalisePrescription, hasSigningKey, signPayload, generateSigningKeyPair } from '../lib/crypto';
+import {
+  FileSignature,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  AlertCircle,
+  Fingerprint,
+  Search,
+  Key,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
 
 const DoctorPrescriptions = () => {
   const { token } = useAuth();
@@ -21,6 +32,8 @@ const DoctorPrescriptions = () => {
 
   // Signing state
   const [isSigning, setIsSigning] = useState(false);
+  const [isActivatingKey, setIsActivatingKey] = useState(false);
+  const [keySuccess, setKeySuccess] = useState('');
   const [signingStep, setSigningStep] = useState<'IDLE' | 'GENERATING' | 'SIGNING' | 'DONE'>('IDLE');
   const [doctorId, setDoctorId] = useState('');
   const [hasKey, setHasKey] = useState<boolean | null>(null);
@@ -71,6 +84,31 @@ const DoctorPrescriptions = () => {
     await executeSearch(patientSearch);
   };
 
+  const handleActivateKey = async () => {
+    setIsActivatingKey(true);
+    setError('');
+    setKeySuccess('');
+    try {
+      const { publicKeyPem } = await generateSigningKeyPair();
+      const res = await api.raw('/api/v1/doctor/signing-key', {
+        method: 'POST',
+        body: JSON.stringify({ public_key_pem: publicKeyPem })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to register cryptographic key on server.');
+      }
+      setHasKey(true);
+      setKeySuccess('Cryptographic ECDSA P-256 signing key successfully activated on this device.');
+      setTimeout(() => setKeySuccess(''), 4000);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Key activation failed.');
+    } finally {
+      setIsActivatingKey(false);
+    }
+  };
+
   const handleAddMedication = () => {
     setMedications([...medications, { name: '', strength: '', frequency: '', duration: '', instructions: '' }]);
   };
@@ -97,10 +135,18 @@ const DoctorPrescriptions = () => {
       if (!doctorId) {
         throw new Error('Could not determine your prescriber id. Reload the page and try again.');
       }
+
+      // If no key is present, auto-provision and register transparently
       if (!(await hasSigningKey())) {
-        throw new Error(
-          'No signing key is present on this device. Prescriptions can only be signed on the device where you registered.'
-        );
+        const { publicKeyPem } = await generateSigningKeyPair();
+        const regRes = await api.raw('/api/v1/doctor/signing-key', {
+          method: 'POST',
+          body: JSON.stringify({ public_key_pem: publicKeyPem })
+        });
+        if (!regRes.ok) {
+          throw new Error('Could not register device signing key with clinical authority.');
+        }
+        setHasKey(true);
       }
 
       // Field names are normalised to the signed schema. The same shape is
@@ -177,20 +223,37 @@ const DoctorPrescriptions = () => {
         </div>
 
         {hasKey === false && (
-          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-semibold">No signing key on this device</p>
-              <p>
-                Your private key is held only on the device where you registered. Sign prescriptions there, or
-                register a new key with your administrator.
-              </p>
+          <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in">
+            <div className="flex items-start gap-3">
+              <Key className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-sm text-slate-900">Cryptographic Signing Key Not Yet Active On This Device</p>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Prescriptions require an in-browser ECDSA P-256 digital signature. Activate this device with one click or sign directly.
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={handleActivateKey}
+              disabled={isActivatingKey}
+              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5 self-start sm:self-auto whitespace-nowrap disabled:opacity-50"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              {isActivatingKey ? 'Activating Key...' : 'Activate Signing Key Now'}
+            </button>
+          </div>
+        )}
+
+        {keySuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-2xl p-4 flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            <span>{keySuccess}</span>
           </div>
         )}
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-800 text-sm rounded-2xl p-4">{error}</div>
+          <div className="bg-red-50 border border-red-200 text-red-800 text-sm rounded-2xl p-4 font-semibold">{error}</div>
         )}
 
         {/* Patient Selection Header */}

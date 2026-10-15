@@ -182,22 +182,28 @@ const PatientVault = () => {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Decryption failed');
+        throw new Error(data.message || 'Decryption failed on server');
       }
 
-      const bytes = Uint8Array.from(atob(data.content_base64), (c) => c.charCodeAt(0));
-      const blob = new Blob([bytes], { type: data.file_mime_type });
+      const binaryString = window.atob(data.content_base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const mimeType = data.file_mime_type || 'application/pdf';
+      const blob = new Blob([bytes], { type: mimeType });
 
       setViewer({
         recordId: id,
         title: data.record_title,
-        mimeType: data.file_mime_type,
+        mimeType,
         objectUrl: URL.createObjectURL(blob),
         sha256: data.file_sha256_hash,
-        algorithm: data.encryption_algorithm
+        algorithm: data.encryption_algorithm || 'AES-256-GCM'
       });
     } catch (e: any) {
-      setError(e.message || 'Could not open this record');
+      setError(e.message || 'Could not decrypt and open this record');
     } finally {
       setDecryptingId(null);
     }
@@ -216,11 +222,14 @@ const PatientVault = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename === 'download' ? `${title}.pdf` : filename;
+      const cleanTitle = (title || 'medical_record').replace(/[^a-zA-Z0-9_-]/g, '_');
+      link.download = filename && filename !== 'download' ? filename : `${cleanTitle}.pdf`;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch (e: any) {
-      setError(e.message || 'Download failed');
+      setError(e.message || 'Download failed. Please try again.');
     }
   };
 
@@ -639,8 +648,8 @@ const PatientVault = () => {
       {/* Decrypted Document Viewer Modal */}
       {viewer && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
-            <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl border border-slate-200">
+            <div className="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center bg-slate-50 gap-3">
               <div className="flex items-center gap-3 min-w-0">
                 <Shield className="w-6 h-6 text-emerald-600 shrink-0" />
                 <div className="min-w-0">
@@ -650,18 +659,44 @@ const PatientVault = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={closeViewer}
-                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-xl font-bold text-xs text-slate-700 transition-colors shrink-0"
-              >
-                Close Viewer
-              </button>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewer.objectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl font-bold text-xs text-slate-700 transition-colors inline-flex items-center gap-1.5 shadow-sm"
+                >
+                  <Eye className="w-3.5 h-3.5" /> Fullscreen
+                </a>
+                <button
+                  type="button"
+                  onClick={() => downloadRecord(viewer.recordId, viewer.title)}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold text-xs text-white shadow-sm transition-colors inline-flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" /> Download PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={closeViewer}
+                  className="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-xl font-bold text-xs text-slate-700 transition-colors shrink-0"
+                >
+                  Close
+                </button>
+              </div>
             </div>
-            <div className="flex-1 overflow-y-auto bg-slate-100">
+
+            <div className="flex-1 overflow-y-auto bg-slate-100 min-h-[480px]">
               {viewer.mimeType.startsWith('image/') ? (
-                <img src={viewer.objectUrl} alt={viewer.title} className="mx-auto max-h-[70vh] object-contain p-6" />
+                <img src={viewer.objectUrl} alt={viewer.title} className="mx-auto max-h-[75vh] object-contain p-6" />
               ) : (
-                <iframe src={viewer.objectUrl} title={viewer.title} className="w-full h-[70vh] border-0" />
+                <object
+                  data={viewer.objectUrl}
+                  type={viewer.mimeType}
+                  className="w-full h-[75vh] border-0"
+                >
+                  <iframe src={viewer.objectUrl} title={viewer.title} className="w-full h-[75vh] border-0" />
+                </object>
               )}
             </div>
           </div>
