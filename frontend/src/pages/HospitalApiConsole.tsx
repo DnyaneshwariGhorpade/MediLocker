@@ -107,10 +107,10 @@ const HospitalApiConsole = () => {
                  {clients.map(c => (
                    <div key={c.client_id} className="border border-slate-200 rounded-xl p-4 bg-slate-50">
                      <p className="font-bold text-slate-800 mb-1">{c.client_name}</p>
-                     <p className="text-xs text-slate-500 mb-3">Key Hash: <span className="font-mono">{c.api_key_hash.substring(0,10)}...</span></p>
+                     <p className="text-xs text-slate-500 mb-3">Key Hash: <span className="font-mono">{c.api_key_hash ? `${c.api_key_hash.substring(0,10)}...` : '—'}</span></p>
                      <div className="flex items-center gap-2">
                        <input
-                         defaultValue={c.allowed_ip_cidrs.join(', ')}
+                         defaultValue={(c.allowed_ip_cidrs || []).join(', ')}
                          onBlur={(e) => handleUpdateWhitelist(c.client_id, e.target.value)}
                          className="flex-1 px-2 py-1 border rounded text-xs font-mono outline-none"
                          title="Update CIDRs"

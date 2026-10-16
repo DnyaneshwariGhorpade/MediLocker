@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
     changePassword,
     confirmMfaEnrolment,
+    getPublicHospitals,
     getSessions,
     login,
     logout,
@@ -31,6 +32,9 @@ import {
 } from '../schemas';
 
 const router = Router();
+
+// ------------------------------------------------------------- public metadata
+router.get('/hospitals', asyncHandler(getPublicHospitals));
 
 // ------------------------------------------------------------- registration
 router.post('/register/patient', authLimiter, validate({ body: registerPatientSchema }), asyncHandler(registerPatient));

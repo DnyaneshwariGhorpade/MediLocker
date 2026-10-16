@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { generateSigningKeyPair } from '../lib/crypto';
 import { Shield, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -8,11 +8,29 @@ const RegisterDoctor = () => {
   const [formData, setFormData] = useState({
     email: '', phone_number: '', password: '',
     first_name: '', last_name: '',
-    mrn: '', state_medical_council: 'Delhi Medical Council',
+    mrn: '', state_medical_council: 'Maharashtra Medical Council',
     specialization: '', qualification: '',
-    primary_hospital_id: '', // Will store a mock ID or name for now
+    primary_hospital_id: 'cd7d2b86-100d-4654-8716-896d3793a705', // Default to Sunrise Hospital
     govt_id_document_url: '' // Mock uploaded URL
   });
+
+  const [hospitalsList, setHospitalsList] = useState<Array<{ hospital_id: string; hospital_name: string; city: string; state: string }>>([
+    { hospital_id: 'cd7d2b86-100d-4654-8716-896d3793a705', hospital_name: 'Sunrise Hospital', city: 'Nagpur', state: 'Maharashtra' },
+    { hospital_id: '83b878e6-33c7-4955-82f9-052471e8a0ea', hospital_name: 'City Care Hospital', city: 'Pune', state: 'Maharashtra' },
+    { hospital_id: '077a8ea6-4f71-4367-8114-3272d99b6c30', hospital_name: 'Lifeline Clinic', city: 'Mumbai', state: 'Maharashtra' },
+    { hospital_id: 'e1939918-b93b-4139-8ea8-92962f36f6df', hospital_name: 'Health Plus Clinic', city: 'Nashik', state: 'Maharashtra' },
+    { hospital_id: '855f8250-881f-450f-bc73-dfbfd13c20ec', hospital_name: 'WellCare Hospital', city: 'Aurangabad', state: 'Maharashtra' },
+  ]);
+
+  useEffect(() => {
+    api.get<any[]>('/api/v1/auth/hospitals')
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setHospitalsList(data);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
@@ -37,12 +55,16 @@ const RegisterDoctor = () => {
       const { publicKeyPem } = await generateSigningKeyPair();
       setKeyStatus('READY');
 
-      await api.post<any>('/api/v1/auth/register/doctor', { ...formData, public_key_pem: publicKeyPem });
+      const payload: any = { ...formData, public_key_pem: publicKeyPem };
+      if (!payload.primary_hospital_id) delete payload.primary_hospital_id;
+
+      await api.post<any>('/api/v1/auth/register/doctor', payload);
 
       setRegistrationComplete(true);
     } catch (err: any) {
       setKeyStatus('IDLE');
-      setError(err.message);
+      const errorMsg = err instanceof ApiError ? err.detailText : (err?.message || 'Registration failed');
+      setError(errorMsg);
     }
   };
 
@@ -158,13 +180,25 @@ const RegisterDoctor = () => {
                 <h3 className="text-xl font-bold text-slate-800 border-b pb-2">Step 2: Verification Documents</h3>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1">Hospital Affiliation (Optional for Independent Clinics)</label>
-                  <select name="primary_hospital_id" onChange={handleChange} value={formData.primary_hospital_id} className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none">
-                    <option value="">Select Hospital (Searchable in Production)</option>
-                    <option value="HOSP-1">Apollo Hospitals, Delhi</option>
-                    <option value="HOSP-2">Fortis Healthcare, Mumbai</option>
-                    <option value="HOSP-3">Max Super Speciality</option>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">
+                    Hospital Affiliation (e.g. Sunrise Hospital)
+                  </label>
+                  <select
+                    name="primary_hospital_id"
+                    onChange={handleChange}
+                    value={formData.primary_hospital_id}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 outline-none bg-white font-medium text-slate-800"
+                  >
+                    <option value="">Select Hospital (or Independent Practice)</option>
+                    {hospitalsList.map((h) => (
+                      <option key={h.hospital_id} value={h.hospital_id}>
+                        {h.hospital_name} ({h.city}, {h.state})
+                      </option>
+                    ))}
                   </select>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Affiliated hospital will verify and approve your clinical credentials upon onboarding.
+                  </p>
                 </div>
 
                 <div>

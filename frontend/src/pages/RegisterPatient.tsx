@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, CheckCircle2, ArrowRight, Lock } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 
 const verhoeff = {
   d: [
@@ -46,14 +46,15 @@ const RegisterPatient = () => {
   const handleSendAadhaarOtp = async () => {
     setError('');
     if (!verhoeff.validate(formData.aadhaar_number)) {
-      setError('Invalid Aadhaar Number (Checksum Failed)');
+      setError('Invalid Aadhaar Number (Checksum Failed). Hint for demo: Use 123412341234 or any valid 12-digit Aadhaar.');
       return;
     }
     try {
       await api.post<any>('/api/v1/auth/patient/send-aadhaar-otp', { aadhaar_number: formData.aadhaar_number });
       setOtpSent(true);
     } catch (err: any) {
-      setError(err.message);
+      const errorMsg = err instanceof ApiError ? err.detailText : (err?.message || 'Failed to send OTP');
+      setError(errorMsg);
     }
   };
 
@@ -63,7 +64,7 @@ const RegisterPatient = () => {
       setAadhaarVerified(true);
       setError('');
     } else {
-      setError('Please enter a valid 6-digit OTP');
+      setError('Please enter a valid 6-digit OTP (e.g. 123456)');
     }
   };
 
@@ -79,18 +80,22 @@ const RegisterPatient = () => {
       return;
     }
 
+    setError('');
     try {
-      const payload = {
+      const payload: any = {
         ...formData,
         aadhaar_hash: `SHA256-${btoa(formData.aadhaar_number)}` // Simple mock hash
       };
+      delete payload.aadhaar_number;
+      delete payload.aadhaar_otp;
 
       const data = await api.post<any>('/api/v1/auth/register/patient', payload);
 
       alert(`Registration Successful! Your Vault Number is ${data.vaultNumber}. Please login.`);
       navigate('/login');
     } catch (err: any) {
-      setError(err.message);
+      const errorMsg = err instanceof ApiError ? err.detailText : (err?.message || 'Patient registration failed');
+      setError(errorMsg);
     }
   };
 
@@ -155,6 +160,9 @@ const RegisterPatient = () => {
                       <button type="button" onClick={handleSendAadhaarOtp} className="px-6 bg-slate-900 text-white rounded-xl font-semibold hover:bg-slate-800 transition-all">Send OTP</button>
                     )}
                   </div>
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    Demonstration Aadhaar: <span className="font-mono font-bold text-slate-700">123412341234</span> (OTP: <span className="font-mono font-bold text-slate-700">123456</span>)
+                  </p>
                 </div>
 
                 {otpSent && !aadhaarVerified && (

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
     categoryList,
     email,
+    emptyStringToUndefined,
     FLAG_REASONS,
     FLAG_STATUSES,
     futureDate,
@@ -9,6 +10,8 @@ import {
     idParam,
     isoDate,
     longText,
+    optionalDate,
+    optionalPhone,
     pagination,
     password,
     phone,
@@ -49,14 +52,14 @@ export const registerPatientSchema = z.object({
     last_name: shortText(100),
     date_of_birth: isoDate,
     gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
-    blood_group: z.string().trim().max(10).optional(),
-    address_line: z.string().trim().max(500).optional(),
-    city: z.string().trim().max(100).optional(),
-    state: z.string().trim().max(100).optional(),
-    pincode: z.string().trim().regex(/^[0-9]{6}$/, 'PIN code must be six digits').optional(),
-    emergency_contact_name: z.string().trim().max(100).optional(),
-    emergency_contact_phone: phone.optional(),
-    emergency_contact_relation: z.string().trim().max(50).optional(),
+    blood_group: emptyStringToUndefined(z.string().trim().max(10).optional()),
+    address_line: emptyStringToUndefined(z.string().trim().max(500).optional()),
+    city: emptyStringToUndefined(z.string().trim().max(100).optional()),
+    state: emptyStringToUndefined(z.string().trim().max(100).optional()),
+    pincode: emptyStringToUndefined(z.string().trim().regex(/^[0-9]{6}$/, 'PIN code must be six digits').optional()),
+    emergency_contact_name: emptyStringToUndefined(z.string().trim().max(100).optional()),
+    emergency_contact_phone: optionalPhone,
+    emergency_contact_relation: emptyStringToUndefined(z.string().trim().max(50).optional()),
     is_emergency_sharing_allowed: z.boolean().optional(),
 });
 
@@ -70,10 +73,11 @@ export const registerDoctorSchema = z.object({
     last_name: shortText(100),
     specialization: shortText(100),
     qualification: shortText(150),
+    primary_hospital_id: emptyStringToUndefined(z.string().uuid().optional().nullable()),
     // Generated in the browser and non-optional: without it the account
     // cannot issue verifiable prescriptions.
     public_key_pem: z.string().min(80).max(4096),
-    govt_id_document_url: z.string().max(500).optional(),
+    govt_id_document_url: emptyStringToUndefined(z.string().max(500).optional().nullable()),
 });
 
 export const registerHospitalSchema = z.object({
@@ -85,7 +89,7 @@ export const registerHospitalSchema = z.object({
     hospital_type: z.enum(HOSPITAL_TYPES),
     contact_email: email,
     contact_phone: phone,
-    address: z.string().trim().max(500).optional(),
+    address: emptyStringToUndefined(z.string().trim().max(500).optional().nullable()),
     city: shortText(100),
     state: shortText(100),
     pincode: z.string().trim().regex(/^[0-9]{6}$/, 'PIN code must be six digits'),
@@ -98,7 +102,7 @@ export const addVitalSchema = z.object({
     metric_value: z.coerce.number().finite().min(-9999).max(999999),
     metric_unit: shortText(20),
     reading_context: z.string().trim().max(100).optional(),
-    recorded_at: isoDate.optional(),
+    recorded_at: optionalDate,
 });
 
 export const updateProfileSchema = z.object({
@@ -147,7 +151,7 @@ export const uploadRecordSchema = z.object({
     record_title: shortText(255),
     category: z.enum(RECORD_CATEGORIES),
     diagnosis: z.string().trim().max(255).optional(),
-    record_date: isoDate.optional(),
+    record_date: optionalDate,
     // Form fields arrive as strings, so a comma-separated list is accepted too.
     tags: z
         .union([z.array(z.string().trim().max(50)).max(20), z.string().max(500)])
@@ -184,14 +188,14 @@ export const prescriptionSchema = z.object({
     digital_signature: z.string().min(1).max(4096),
     // Part of the signed payload, so it must come from the signer.
     issued_at: z.string().datetime(),
-    valid_until: isoDate.optional(),
+    valid_until: optionalDate,
 });
 
 export const consultationSchema = z.object({
     patient_id: uuid,
     chief_complaint: longText(2000),
     diagnosis_summary: z.string().trim().max(2000).optional(),
-    follow_up_date: isoDate.optional(),
+    follow_up_date: optionalDate,
 });
 
 export const doctorSearchQuerySchema = z.object({
@@ -199,8 +203,8 @@ export const doctorSearchQuerySchema = z.object({
     category: z.union([z.enum(RECORD_CATEGORIES), z.literal('ALL')]).optional(),
     keyword: z.string().trim().max(200).optional(),
     hospital_id: uuid.optional(),
-    from_date: isoDate.optional(),
-    to_date: isoDate.optional(),
+    from_date: optionalDate,
+    to_date: optionalDate,
 });
 
 export const flagRecordSchema = z.object({
@@ -261,13 +265,13 @@ export const auditLogQuerySchema = pagination.extend({
     resource_type: z.string().trim().max(50).optional(),
     resource_id: z.string().trim().max(100).optional(),
     ip_address: z.string().trim().max(45).optional(),
-    start_date: isoDate.optional(),
-    end_date: isoDate.optional(),
+    start_date: optionalDate,
+    end_date: optionalDate,
 });
 
 export const auditExportQuerySchema = z.object({
-    start_date: isoDate.optional(),
-    end_date: isoDate.optional(),
+    start_date: optionalDate,
+    end_date: optionalDate,
     format: z.enum(['json', 'csv']).default('json'),
 });
 

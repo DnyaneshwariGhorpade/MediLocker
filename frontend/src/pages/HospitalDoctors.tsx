@@ -10,32 +10,45 @@ const HospitalDoctors = () => {
 
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   useEffect(() => {
     fetchDoctors();
   }, [token]);
 
   const fetchDoctors = async () => {
     try {
+      setErrorMsg(null);
       setDoctors(await api.get<any>('/api/v1/hospital/doctors'));
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e?.message || 'Failed to load doctors list');
+    }
   };
 
   const handleStatusChange = async (id: string, action: 'approve' | 'revoke') => {
     try {
+      setErrorMsg(null);
       const res = await api.raw(`/api/v1/hospital/doctors/${id}/${action}`, {
         method: 'POST',
-        });
+      });
       if (res.ok) {
         setSelectedDoctor(null);
         fetchDoctors();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setErrorMsg(body.message || `Failed to ${action} doctor`);
       }
-    } catch (e) { console.error(e); }
+    } catch (e: any) {
+      console.error(e);
+      setErrorMsg(e?.message || `Failed to ${action} doctor`);
+    }
   };
 
   const filteredDoctors = doctors.filter(d =>
-    d.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.mrn.toLowerCase().includes(searchQuery.toLowerCase())
+    (d.first_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.last_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.mrn || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -61,6 +74,14 @@ const HospitalDoctors = () => {
           </div>
         </div>
 
+        {/* Error Banner */}
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm flex items-center justify-between">
+            <span>{errorMsg}</span>
+            <button onClick={() => setErrorMsg(null)} className="text-red-500 hover:text-red-800 font-bold ml-4">✕</button>
+          </div>
+        )}
+
         {/* Directory Table */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
@@ -80,11 +101,11 @@ const HospitalDoctors = () => {
                     <td className="p-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
-                          {doc.first_name.charAt(0)}{doc.last_name.charAt(0)}
+                          {doc.first_name?.charAt(0) || ''}{doc.last_name?.charAt(0) || ''}
                         </div>
                         <div>
                           <p className="font-bold text-slate-800">Dr. {doc.first_name} {doc.last_name}</p>
-                          <p className="text-xs text-slate-500 font-mono" title="Public Key Fingerprint">{doc.key_fingerprint.substring(0,16)}...</p>
+                          <p className="text-xs text-slate-500 font-mono" title="Public Key Fingerprint">{doc.key_fingerprint ? `${doc.key_fingerprint.substring(0,16)}...` : '—'}</p>
                         </div>
                       </div>
                     </td>
@@ -129,7 +150,7 @@ const HospitalDoctors = () => {
              <div className="p-8 space-y-6">
                 <div className="flex items-center gap-4 mb-6 border-b pb-6">
                   <div className="w-16 h-16 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-2xl">
-                    {selectedDoctor.first_name.charAt(0)}{selectedDoctor.last_name.charAt(0)}
+                    {selectedDoctor.first_name?.charAt(0) || ''}{selectedDoctor.last_name?.charAt(0) || ''}
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-slate-900">Dr. {selectedDoctor.first_name} {selectedDoctor.last_name}</h2>

@@ -54,6 +54,37 @@ export const sendAadhaarOtp = async (req: Request, res: Response): Promise<void>
     }
 };
 
+function handleRegistrationPrismaError(error: any, res: Response): boolean {
+    if (error?.code === 'P2002') {
+        const targets = Array.isArray(error.meta?.target)
+            ? error.meta.target.join(' ')
+            : String(error.meta?.target || '');
+        if (targets.includes('email')) {
+            res.status(409).json({ message: 'An account with this email address already exists.' });
+            return true;
+        }
+        if (targets.includes('phone_number')) {
+            res.status(409).json({ message: 'An account with this mobile number already exists.' });
+            return true;
+        }
+        if (targets.includes('mrn')) {
+            res.status(409).json({ message: 'A doctor with this Medical Registration Number (MRN) is already registered.' });
+            return true;
+        }
+        if (targets.includes('registration_number')) {
+            res.status(409).json({ message: 'A hospital with this CEA Registration Number is already registered.' });
+            return true;
+        }
+        if (targets.includes('aadhaar_hash')) {
+            res.status(409).json({ message: 'A patient account is already registered with this Aadhaar number.' });
+            return true;
+        }
+        res.status(409).json({ message: 'A record with these unique details already exists.' });
+        return true;
+    }
+    return false;
+}
+
 // POST /api/v1/auth/register/patient
 export const registerPatient = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -64,15 +95,30 @@ export const registerPatient = async (req: Request, res: Response): Promise<void
             is_emergency_sharing_allowed
         } = req.body;
 
-        // Check if user already exists
-        const existingUser = await db.users.findFirst({
-            where: {
-                OR: [{ email }, { phone_number }]
-            }
+        // Check if email already registered
+        const existingEmail = await db.users.findUnique({
+            where: { email }
         });
+        if (existingEmail) {
+            res.status(400).json({ message: 'An account with this email address already exists.' });
+            return;
+        }
 
-        if (existingUser) {
-            res.status(400).json({ message: 'User with this email or phone already exists' });
+        // Check if phone already registered
+        const existingPhone = await db.users.findUnique({
+            where: { phone_number }
+        });
+        if (existingPhone) {
+            res.status(400).json({ message: 'An account with this mobile number already exists.' });
+            return;
+        }
+
+        // Check if Aadhaar already registered
+        const existingAadhaar = await db.patients.findUnique({
+            where: { aadhaar_hash }
+        });
+        if (existingAadhaar) {
+            res.status(400).json({ message: 'A patient account is already registered with this Aadhaar number.' });
             return;
         }
 
@@ -85,7 +131,8 @@ export const registerPatient = async (req: Request, res: Response): Promise<void
                     email,
                     phone_number,
                     password_hash,
-                    user_role: 'PATIENT'
+                    user_role: 'PATIENT',
+                    account_status: 'ACTIVE'
                 }
             });
 
@@ -97,14 +144,14 @@ export const registerPatient = async (req: Request, res: Response): Promise<void
                     last_name,
                     date_of_birth: new Date(date_of_birth),
                     gender,
-                    blood_group,
-                    address_line,
-                    city,
-                    state,
-                    pincode,
-                    emergency_contact_name,
-                    emergency_contact_phone,
-                    emergency_contact_relation,
+                    blood_group: blood_group || null,
+                    address_line: address_line || null,
+                    city: city || null,
+                    state: state || null,
+                    pincode: pincode || null,
+                    emergency_contact_name: emergency_contact_name || null,
+                    emergency_contact_phone: emergency_contact_phone || null,
+                    emergency_contact_relation: emergency_contact_relation || null,
                     is_emergency_sharing_allowed: is_emergency_sharing_allowed !== undefined ? is_emergency_sharing_allowed : true
                 }
             });
@@ -130,8 +177,9 @@ export const registerPatient = async (req: Request, res: Response): Promise<void
             vaultNumber: newUser.vault_number
         });
     } catch (error: any) {
-        console.error(error);
-        res.status(500).json({ message: 'Registration failed', error: error.message });
+        console.error('Patient registration error:', error);
+        if (handleRegistrationPrismaError(error, res)) return;
+        res.status(500).json({ message: error.message || 'Patient registration failed' });
     }
 };
 
@@ -142,8 +190,35 @@ export const registerDoctor = async (req: Request, res: Response): Promise<void>
             email, phone_number, password, mrn, state_medical_council, 
             first_name, last_name, specialization, qualification, 
             public_key_pem, key_fingerprint,
-            govt_id_document_url // Uploaded document
+            govt_id_document_url, primary_hospital_id
         } = req.body;
+
+        // Check if email already registered
+        const existingEmail = await db.users.findUnique({
+            where: { email }
+        });
+        if (existingEmail) {
+            res.status(400).json({ message: 'An account with this email address already exists.' });
+            return;
+        }
+
+        // Check if phone already registered
+        const existingPhone = await db.users.findUnique({
+            where: { phone_number }
+        });
+        if (existingPhone) {
+            res.status(400).json({ message: 'An account with this mobile number already exists.' });
+            return;
+        }
+
+        // Check if MRN already registered
+        const existingDoctor = await db.doctors.findUnique({
+            where: { mrn }
+        });
+        if (existingDoctor) {
+            res.status(400).json({ message: 'A doctor with this Medical Registration Number (MRN) is already registered.' });
+            return;
+        }
 
         // A doctor account is only useful if the server can verify its
         // signatures, so an unusable key is rejected up front rather than
@@ -177,6 +252,7 @@ export const registerDoctor = async (req: Request, res: Response): Promise<void>
             await tx.doctors.create({
                 data: {
                     user_id: user.user_id,
+                    primary_hospital_id: primary_hospital_id || null,
                     mrn,
                     state_medical_council,
                     first_name,
@@ -194,8 +270,28 @@ export const registerDoctor = async (req: Request, res: Response): Promise<void>
 
         res.status(201).json({ message: 'Doctor registered successfully. Pending verification.', userId: newUser.user_id });
     } catch (error: any) {
-        console.error(error);
-        res.status(500).json({ message: 'Registration failed', error: error.message });
+        console.error('Doctor registration error:', error);
+        if (handleRegistrationPrismaError(error, res)) return;
+        res.status(500).json({ message: error.message || 'Doctor registration failed' });
+    }
+};
+
+// GET /api/v1/auth/hospitals
+export const getPublicHospitals = async (_req: Request, res: Response): Promise<void> => {
+    try {
+        const hospitals = await db.hospitals.findMany({
+            select: {
+                hospital_id: true,
+                hospital_name: true,
+                city: true,
+                state: true,
+                registration_number: true
+            },
+            orderBy: { hospital_name: 'asc' }
+        });
+        res.json(hospitals);
+    } catch (error: any) {
+        res.status(500).json({ message: 'Failed to fetch hospitals', error: error.message });
     }
 };
 
@@ -204,8 +300,35 @@ export const registerHospital = async (req: Request, res: Response): Promise<voi
     try {
         const { 
             email, phone_number, password, hospital_name, registration_number, 
-            hospital_type, contact_email, contact_phone, city, state, pincode
+            hospital_type, contact_email, contact_phone, city, state, pincode, address
         } = req.body;
+
+        // Check if email already registered
+        const existingEmail = await db.users.findUnique({
+            where: { email }
+        });
+        if (existingEmail) {
+            res.status(400).json({ message: 'An account with this email address already exists.' });
+            return;
+        }
+
+        // Check if phone already registered
+        const existingPhone = await db.users.findUnique({
+            where: { phone_number }
+        });
+        if (existingPhone) {
+            res.status(400).json({ message: 'An account with this mobile number already exists.' });
+            return;
+        }
+
+        // Check if registration number already registered
+        const existingHospital = await db.hospitals.findUnique({
+            where: { registration_number }
+        });
+        if (existingHospital) {
+            res.status(400).json({ message: 'A hospital with this CEA Registration Number is already registered.' });
+            return;
+        }
 
         const password_hash = await bcrypt.hash(password, env.bcryptRounds);
 
@@ -228,6 +351,7 @@ export const registerHospital = async (req: Request, res: Response): Promise<voi
                     hospital_type,
                     contact_email,
                     contact_phone,
+                    address: address || null,
                     city,
                     state,
                     pincode
@@ -239,8 +363,9 @@ export const registerHospital = async (req: Request, res: Response): Promise<voi
 
         res.status(201).json({ message: 'Hospital registered successfully. Pending verification.', userId: newUser.user_id });
     } catch (error: any) {
-        console.error(error);
-        res.status(500).json({ message: 'Registration failed', error: error.message });
+        console.error('Hospital registration error:', error);
+        if (handleRegistrationPrismaError(error, res)) return;
+        res.status(500).json({ message: error.message || 'Hospital registration failed' });
     }
 };
 

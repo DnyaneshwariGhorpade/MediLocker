@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 
 const RegisterHospital = () => {
   const [formData, setFormData] = useState({
@@ -24,12 +24,16 @@ const RegisterHospital = () => {
       return;
     }
 
+    setError('');
     try {
-      await api.post<any>('/api/v1/auth/register/hospital', formData);
+      const payload: any = { ...formData };
+      if (!payload.license_url) delete payload.license_url;
+      await api.post<any>('/api/v1/auth/register/hospital', payload);
 
       setRegistrationComplete(true);
     } catch (err: any) {
-      setError(err.message);
+      const errorMsg = err instanceof ApiError ? err.detailText : (err?.message || 'Hospital registration failed');
+      setError(errorMsg);
     }
   };
 
@@ -218,8 +222,7 @@ const RegisterHospital = () => {
               ) : <div></div>}
               <button
                 type="submit"
-                disabled={step === 2 && !formData.license_url}
-                className="bg-blue-600 disabled:bg-blue-300 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md transition-all"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md transition-all"
               >
                 {step === 3 ? 'Submit for Verification' : 'Continue'}
               </button>

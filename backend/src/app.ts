@@ -29,6 +29,11 @@ export function createApp() {
 
     // BigInt columns (file_size_bytes, block_number, log_id) are not valid JSON.
     // Serialise them as strings rather than throwing at response time.
+    if (!('toJSON' in BigInt.prototype)) {
+        (BigInt.prototype as any).toJSON = function () {
+            return this.toString();
+        };
+    }
     app.set('json replacer', (_key: string, value: unknown) =>
         typeof value === 'bigint' ? value.toString() : value
     );

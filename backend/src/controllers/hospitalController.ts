@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../services/db';
 import { AuthRequest, routeParam } from '../middlewares/authMiddleware';
+import { recordAudit } from '../services/auditLog';
 
 export const getDashboardSummary = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -56,6 +57,9 @@ export const getDashboardSummary = async (req: AuthRequest, res: Response): Prom
         // Recent staff verifications
         const recentDoctors = await db.doctors.findMany({
             where: { primary_hospital_id: hospital.hospital_id },
+            include: {
+                users: { select: { email: true, phone_number: true, account_status: true } }
+            },
             orderBy: { updated_at: 'desc' },
             take: 5
         });
@@ -88,6 +92,9 @@ export const getDoctors = async (req: AuthRequest, res: Response): Promise<void>
 
         const doctors = await db.doctors.findMany({
             where: { primary_hospital_id: hospital.hospital_id },
+            include: {
+                users: { select: { email: true, phone_number: true, account_status: true } }
+            },
             orderBy: { created_at: 'desc' }
         });
 
@@ -104,9 +111,33 @@ export const approveDoctor = async (req: AuthRequest, res: Response): Promise<vo
         const hospital = await db.hospitals.findUnique({ where: { user_id: userId } });
         if (!hospital) { res.status(404).json({ message: 'Hospital not found' }); return; }
 
+        const existingDoc = await db.doctors.findFirst({
+            where: { doctor_id: doctorId, primary_hospital_id: hospital.hospital_id }
+        });
+        if (!existingDoc) {
+            res.status(404).json({ message: 'Doctor not found at this hospital' });
+            return;
+        }
+
         const doctor = await db.doctors.update({
-            where: { doctor_id: doctorId, primary_hospital_id: hospital.hospital_id },
+            where: { doctor_id: doctorId },
             data: { verification_status: 'VERIFIED' }
+        });
+
+        await db.users.update({
+            where: { user_id: doctor.user_id },
+            data: { account_status: 'ACTIVE' }
+        });
+
+        await recordAudit({
+            action: 'DOCTOR_VERIFY',
+            resourceType: 'DOCTOR',
+            resourceId: doctorId,
+            userId: userId ?? null,
+            userRole: 'HOSPITAL_ADMIN',
+            ipAddress: req.ip ?? null,
+            userAgent: req.get('user-agent') ?? null,
+            details: { hospitalId: hospital.hospital_id, hospitalName: hospital.hospital_name }
         });
 
         res.json({ message: 'Doctor verified successfully', doctor });
@@ -122,9 +153,33 @@ export const revokeDoctor = async (req: AuthRequest, res: Response): Promise<voi
         const hospital = await db.hospitals.findUnique({ where: { user_id: userId } });
         if (!hospital) { res.status(404).json({ message: 'Hospital not found' }); return; }
 
+        const existingDoc = await db.doctors.findFirst({
+            where: { doctor_id: doctorId, primary_hospital_id: hospital.hospital_id }
+        });
+        if (!existingDoc) {
+            res.status(404).json({ message: 'Doctor not found at this hospital' });
+            return;
+        }
+
         const doctor = await db.doctors.update({
-            where: { doctor_id: doctorId, primary_hospital_id: hospital.hospital_id },
+            where: { doctor_id: doctorId },
             data: { verification_status: 'REVOKED' }
+        });
+
+        await db.users.update({
+            where: { user_id: doctor.user_id },
+            data: { account_status: 'DEACTIVATED' }
+        });
+
+        await recordAudit({
+            action: 'DOCTOR_REVOKE',
+            resourceType: 'DOCTOR',
+            resourceId: doctorId,
+            userId: userId ?? null,
+            userRole: 'HOSPITAL_ADMIN',
+            ipAddress: req.ip ?? null,
+            userAgent: req.get('user-agent') ?? null,
+            details: { hospitalId: hospital.hospital_id, hospitalName: hospital.hospital_name }
         });
 
         res.json({ message: 'Doctor revoked successfully', doctor });

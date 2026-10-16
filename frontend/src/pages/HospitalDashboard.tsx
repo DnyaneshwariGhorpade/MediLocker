@@ -72,8 +72,8 @@ const HospitalDashboard = () => {
               <Building2 className="w-8 h-8" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-slate-900">{data.hospital.name}</h1>
-              <p className="text-slate-500 font-medium text-sm tracking-wide uppercase">{data.hospital.type.replace(/_/g, ' ')} • ID: {data.hospital.id.substring(0, 8)}</p>
+              <h1 className="text-2xl font-extrabold text-slate-900">{data.hospital?.name || 'Hospital Dashboard'}</h1>
+              <p className="text-slate-500 font-medium text-sm tracking-wide uppercase">{(data.hospital?.type || 'HOSPITAL').replace(/_/g, ' ')} • ID: {data.hospital?.id ? data.hospital.id.substring(0, 8) : '—'}</p>
             </div>
           </div>
         </div>

@@ -46,6 +46,11 @@ export const phone = z
     .regex(/^[0-9+][0-9\s-]{7,19}$/, 'Must be a valid phone number')
     .max(20);
 
+export const emptyStringToUndefined = (schema: z.ZodTypeAny) =>
+    z.preprocess((val) => (val === '' ? undefined : val), schema);
+
+export const optionalPhone = z.preprocess((val) => (val === '' ? undefined : val), phone.optional());
+
 /**
  * Registration passwords must survive a credential-stuffing attempt. Mirrors
  * the rule stated on Screen 2.2 of the feature map.
@@ -61,7 +66,15 @@ export const password = z
 
 export const sha256Hex = z.string().regex(/^[a-fA-F0-9]{64}$/, 'Must be a 64-character SHA-256 hex digest');
 
-export const isoDate = z.coerce.date();
+export const isoDate = z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.coerce.date()
+);
+
+export const optionalDate = z.preprocess(
+    (val) => (val === '' || val === null ? undefined : val),
+    z.coerce.date().optional()
+);
 
 /** Future timestamp, used for consent and session expiry. */
 export const futureDate = z.coerce.date().refine((value) => value.getTime() > Date.now(), {
