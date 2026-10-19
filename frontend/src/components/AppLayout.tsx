@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import {
@@ -91,10 +91,12 @@ const ROLE_LABEL: Record<string, string> = {
 const AppLayout = () => {
     const { role, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [menuOpen, setMenuOpen] = useState(false);
     const [unread, setUnread] = useState(0);
 
     const items = NAV_BY_ROLE[role ?? ''] ?? [];
+    const currentItem = items.find((item) => item.to === location.pathname);
 
     useEffect(() => {
         if (role !== 'PATIENT') return;
@@ -126,8 +128,8 @@ const AppLayout = () => {
     };
 
     const linkClass = ({ isActive }: { isActive: boolean }) =>
-        `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-            isActive ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
+        `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+            isActive ? 'bg-slate-900 text-white shadow-sm translate-x-1' : 'text-slate-600 hover:bg-slate-100'
         }`;
 
     return (
@@ -147,8 +149,10 @@ const AppLayout = () => {
                 }`}
             >
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <Link to="/" className="flex items-center gap-2">
-                        <Shield className="text-blue-600 h-7 w-7" />
+                    <Link to="/" className="flex items-center gap-2.5">
+                        <div className="p-1.5 bg-blue-50 rounded-xl border border-blue-100">
+                            <Shield className="text-blue-600 h-6 w-6" />
+                        </div>
                         <span className="text-lg font-bold text-slate-900">MediLocker</span>
                     </Link>
                     <button
@@ -189,14 +193,22 @@ const AppLayout = () => {
                     </div>
                     <button
                         onClick={signOut}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     >
                         <LogOut className="w-4 h-4" /> Sign out
                     </button>
+                    <div className="px-2 pt-2 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+                        <span>MediLocker v1.0.0</span>
+                        <span className="text-emerald-600 font-medium flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Online
+                        </span>
+                    </div>
                 </div>
             </aside>
 
             <div className="flex-1 min-w-0 flex flex-col">
+                {/* Mobile header */}
                 <header className="lg:hidden sticky top-0 z-20 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
                     <button
                         onClick={() => setMenuOpen(true)}
@@ -208,6 +220,38 @@ const AppLayout = () => {
                     <Shield className="text-blue-600 h-6 w-6" />
                     <span className="font-bold text-slate-900">MediLocker</span>
                     <Activity className="w-4 h-4 text-emerald-500 ml-auto" aria-hidden />
+                </header>
+
+                {/* Desktop top bar */}
+                <header className="hidden lg:flex sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200/80 px-8 py-3.5 items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-slate-800">
+                            {currentItem?.label ?? ROLE_LABEL[role ?? ''] ?? 'Workspace'}
+                        </span>
+                        <span className="text-slate-300">/</span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Ledger Integrity Active
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <Link
+                            to="/verify"
+                            className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-200 hover:bg-blue-50/50"
+                        >
+                            <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                            <span>Public Verifier</span>
+                        </Link>
+                        <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
+                            <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center">
+                                {(ROLE_LABEL[role ?? ''] ?? role ?? 'U')[0]}
+                            </div>
+                            <span className="text-xs font-medium text-slate-700">
+                                {ROLE_LABEL[role ?? ''] ?? role}
+                            </span>
+                        </div>
+                    </div>
                 </header>
 
                 <main className="flex-1 min-w-0">

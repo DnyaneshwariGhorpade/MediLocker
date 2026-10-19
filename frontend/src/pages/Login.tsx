@@ -138,42 +138,86 @@ const Login = () => {
           )}
 
           {!mfaRequired ? (
-            <form onSubmit={handleLogin} className="space-y-5 animate-in fade-in zoom-in-95">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Login ID (Email, Phone, or ML-2026-XXXX)</label>
-                <input
-                  type="text"
-                  value={loginId}
-                  onChange={(e) => setLoginId(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white"
-                  placeholder="e.g. ML-2026-1234"
-                  required
-                />
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-semibold text-slate-700">Password</label>
-                  <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-700">Forgot password?</a>
+            <div>
+              {/* Quick Preset Selector for Dev & Testing */}
+              <div className="mb-6 p-3 bg-slate-50 border border-slate-200/80 rounded-xl">
+                <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                  <span>Quick Demo Logins</span>
+                  <span className="text-[10px] text-blue-600 font-normal">Click to fill</span>
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white"
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setLoginId('patient@medilocker.com'); setPassword('password123'); }}
+                    className="text-xs px-2.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 text-left transition-colors flex items-center justify-between"
+                  >
+                    <span>Patient</span>
+                    <span className="text-[10px] text-slate-400 font-mono">patient@</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginId('doctor@medilocker.com'); setPassword('password123'); }}
+                    className="text-xs px-2.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 text-left transition-colors flex items-center justify-between"
+                  >
+                    <span>Doctor</span>
+                    <span className="text-[10px] text-slate-400 font-mono">doctor@</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginId('hospital@medilocker.com'); setPassword('password123'); }}
+                    className="text-xs px-2.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 text-left transition-colors flex items-center justify-between"
+                  >
+                    <span>Hospital</span>
+                    <span className="text-[10px] text-slate-400 font-mono">hospital@</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginId('admin@medilocker.com'); setPassword('password123'); }}
+                    className="text-xs px-2.5 py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 font-medium rounded-lg border border-slate-200 text-left transition-colors flex items-center justify-between"
+                  >
+                    <span>Admin</span>
+                    <span className="text-[10px] text-slate-400 font-mono">admin@</span>
+                  </button>
+                </div>
               </div>
 
-              <button
-                type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-              >
-                Authenticate Identity
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </form>
+              <form onSubmit={handleLogin} className="space-y-4 animate-in fade-in zoom-in-95">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Login ID (Email, Phone, or ML-2026-XXXX)</label>
+                  <input
+                    type="text"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white text-sm"
+                    placeholder="e.g. patient@medilocker.com or ML-2026-1001"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-sm font-semibold text-slate-700">Password</label>
+                    <span className="text-xs text-slate-400 font-mono">password123</span>
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none transition-all bg-slate-50 focus:bg-white text-sm"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  Authenticate Identity
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
           ) : (
             <div className="space-y-6 animate-in slide-in-from-right-8">
               <div className="text-center">
@@ -181,7 +225,11 @@ const Login = () => {
                   <Shield className="text-blue-600 w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">Two-Step Verification</h3>
-                <p className="text-sm text-slate-500 mt-2">Enter the 6-digit TOTP / SMS OTP sent to your registered device. (Use 123456 for testing)</p>
+                <p className="text-sm text-slate-500 mt-2">Enter the 6-digit TOTP from your authenticator app or SMS OTP.</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200/60 rounded-full text-xs font-medium">
+                  <span>Development code:</span>
+                  <code className="font-mono font-bold text-blue-900">123456</code>
+                </div>
               </div>
 
               <div className="flex justify-center gap-2">
